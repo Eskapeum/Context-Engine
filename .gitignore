@@ -51,3 +51,13 @@ CLAUDE.md
 # Misc
 *.tgz
 .npmrc
+
+# Development tools (not part of UCM)
+.bmad/
+.agent/
+.agentvibes/
+.gemini/
+.claude/
+.mcp.json
+Initial-*.md
+docs/

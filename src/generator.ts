@@ -36,13 +36,6 @@ export interface GeneratorConfig {
 // ============================================================================
 
 /**
- * Estimate token count (rough: ~4 chars per token)
- */
-function estimateTokens(text: string): number {
-  return Math.ceil(text.length / 4);
-}
-
-/**
  * Group files by directory
  */
 function groupByDirectory(files: Record<string, FileIndex>): Record<string, FileIndex[]> {
@@ -257,9 +250,6 @@ ${fileTree}
 `;
 
   for (const [dir, files] of Object.entries(byDir)) {
-    const symbols = files.flatMap((f) => f.symbols);
-    const exported = symbols.filter((s) => s.exported);
-
     md += `### ${dir}/
 
 `;

@@ -518,7 +518,6 @@ export class Indexer {
     if (!config) return [];
 
     const symbols: CodeSymbol[] = [];
-    const lines = content.split('\n');
 
     // Extract functions
     if (config.patterns.function) {

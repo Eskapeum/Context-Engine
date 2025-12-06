@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /**
  * Universal Context Memory - CLI
  *
@@ -11,7 +10,10 @@
 import { Command } from 'commander';
 import { Indexer } from './indexer.js';
 import { ContextGenerator } from './generator.js';
-import { watch } from 'chokidar';
+import { ContextEngine } from './context-engine.js';
+import { FileWatcher } from './core/watcher.js';
+import { KnowledgeGraph, GraphBuilder } from './graph/index.js';
+import { loadConfig, validateConfig, generateDefaultConfig, type UCMConfig } from './config.js';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -133,8 +135,11 @@ program
   .command('watch')
   .description('Watch for file changes and auto-update context files')
   .option('-p, --path <path>', 'Project path', process.cwd())
+  .option('-d, --debounce <ms>', 'Debounce delay in milliseconds', '500')
+  .option('--no-regenerate', 'Skip regenerating context files on change')
   .action(async (options) => {
     const projectRoot = path.resolve(options.path);
+    const debounceMs = parseInt(options.debounce, 10);
 
     console.log(`👀 Watching ${projectRoot} for changes...\n`);
 
@@ -142,59 +147,69 @@ program
     const indexer = new Indexer({ projectRoot });
     let index = await indexer.index();
     await indexer.saveIndex(index);
-    const generator = new ContextGenerator({ projectRoot, index });
-    generator.generateAll();
+
+    if (options.regenerate !== false) {
+      const generator = new ContextGenerator({ projectRoot, index });
+      generator.generateAll();
+    }
 
     console.log(`✅ Initial index: ${index.totalFiles} files, ${index.totalSymbols} symbols\n`);
 
-    // Watch for changes
-    const watcher = watch(projectRoot, {
+    // Use our FileWatcher with smart dependency tracking
+    const watcher = new FileWatcher(projectRoot, {
+      debounceMs,
       ignored: [
         '**/node_modules/**',
         '**/.git/**',
         '**/dist/**',
         '**/build/**',
         '**/.context/**',
+        '**/.ucm/**',
         '**/CONTEXT.md',
         '**/CLAUDE.md',
         '**/.cursorrules',
         '**/.github/copilot-instructions.md',
       ],
-      persistent: true,
-      ignoreInitial: true,
     });
 
-    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    watcher.on('change', async (event) => {
+      const { filePath, type, affectedFiles } = event;
+      const relativePath = path.relative(projectRoot, filePath);
 
-    const reindex = async () => {
+      if (type === 'add') {
+        console.log(`➕ Added: ${relativePath}`);
+      } else if (type === 'change') {
+        console.log(`📝 Changed: ${relativePath}`);
+      } else if (type === 'unlink') {
+        console.log(`➖ Removed: ${relativePath}`);
+      }
+
+      if (affectedFiles.length > 1) {
+        console.log(`   → ${affectedFiles.length - 1} dependent files affected`);
+      }
+
       console.log('🔄 Reindexing...');
       const startTime = Date.now();
 
       index = await indexer.index();
       await indexer.saveIndex(index);
 
-      const newGenerator = new ContextGenerator({ projectRoot, index });
-      newGenerator.generateAll();
+      if (options.regenerate !== false) {
+        const newGenerator = new ContextGenerator({ projectRoot, index });
+        newGenerator.generateAll();
+      }
 
       const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
       console.log(`✅ Updated in ${elapsed}s (${index.totalFiles} files)\n`);
-    };
+    });
 
-    const debouncedReindex = () => {
-      if (debounceTimer) clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(reindex, 1000);
-    };
-
-    watcher.on('add', debouncedReindex);
-    watcher.on('change', debouncedReindex);
-    watcher.on('unlink', debouncedReindex);
-
+    watcher.start();
     console.log('Press Ctrl+C to stop watching.\n');
 
     // Handle graceful shutdown
     process.on('SIGINT', () => {
       console.log('\n👋 Stopping watch mode...');
-      watcher.close();
+      watcher.stop();
       process.exit(0);
     });
   });
@@ -425,6 +440,507 @@ program
     }
 
     console.log(`\nSymbols: ${oldIndex.totalSymbols} → ${newIndex.totalSymbols}`);
+  });
+
+// ============================================================================
+// SEARCH COMMAND (Hybrid BM25 + Semantic)
+// ============================================================================
+
+program
+  .command('search <query>')
+  .description('Hybrid search using BM25 + semantic similarity')
+  .option('-p, --path <path>', 'Project path', process.cwd())
+  .option('-n, --limit <number>', 'Maximum results', '10')
+  .option('-t, --tokens <number>', 'Max tokens in results', '8000')
+  .option('-m, --mode <mode>', 'Search mode: hybrid, bm25, semantic', 'bm25')
+  .option('-s, --score <number>', 'Minimum relevance score (0-1)', '0.1')
+  .option('--show-content', 'Show matching content snippets')
+  .action(async (query, options) => {
+    const projectRoot = path.resolve(options.path);
+    const limit = parseInt(options.limit, 10);
+    const maxTokens = parseInt(options.tokens, 10);
+    const minScore = parseFloat(options.score);
+
+    const indexer = new Indexer({ projectRoot });
+    const index = indexer.loadIndex();
+
+    if (!index) {
+      console.log('❌ No index found. Run `ucm index` first.');
+      process.exit(1);
+    }
+
+    console.log(`\n🔍 Searching for "${query}" (mode: ${options.mode})...\n`);
+
+    const engine = new ContextEngine({ projectRoot, index });
+    const startTime = Date.now();
+
+    let results;
+    if (options.mode === 'hybrid') {
+      results = await engine.hybridRetrieve(query, maxTokens, minScore, { semanticWeight: 0.5, bm25Weight: 0.5 });
+    } else if (options.mode === 'semantic') {
+      results = await engine.retrieve(query, maxTokens, minScore);
+    } else {
+      results = await engine.bm25Retrieve(query, maxTokens, { minScore });
+    }
+
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(3);
+
+    if (results.chunks.length === 0) {
+      console.log(`❌ No results found for "${query}"`);
+      return;
+    }
+
+    console.log(`✅ Found ${results.chunks.length} results in ${elapsed}s (${results.tokenCount} tokens)\n`);
+
+    const displayResults = results.chunks.slice(0, limit);
+    for (let i = 0; i < displayResults.length; i++) {
+      const chunk = displayResults[i];
+      const score = chunk.metadata?.score || 0;
+      const scoreStr = (score * 100).toFixed(1);
+
+      console.log(`${i + 1}. [${scoreStr}%] ${chunk.filePath}:${chunk.startLine}-${chunk.endLine}`);
+      console.log(`   Type: ${chunk.type} | Symbols: ${chunk.symbols.join(', ') || 'none'}`);
+
+      if (options.showContent) {
+        const preview = chunk.content.slice(0, 200).replace(/\n/g, ' ').trim();
+        console.log(`   ${preview}${chunk.content.length > 200 ? '...' : ''}`);
+      }
+      console.log();
+    }
+
+    if (results.chunks.length > limit) {
+      console.log(`... and ${results.chunks.length - limit} more results\n`);
+    }
+  });
+
+// ============================================================================
+// GRAPH COMMAND
+// ============================================================================
+
+program
+  .command('graph')
+  .description('Export the knowledge graph')
+  .option('-p, --path <path>', 'Project path', process.cwd())
+  .option('-f, --format <format>', 'Output format: json, dot, mermaid', 'json')
+  .option('-o, --output <file>', 'Output file (default: stdout)')
+  .option('--filter <type>', 'Filter by node type: file, class, function, etc.')
+  .option('--max-nodes <number>', 'Maximum nodes to include', '500')
+  .action(async (options) => {
+    const projectRoot = path.resolve(options.path);
+    const maxNodes = parseInt(options.maxNodes, 10);
+
+    const indexer = new Indexer({ projectRoot });
+    const index = indexer.loadIndex();
+
+    if (!index) {
+      console.log('❌ No index found. Run `ucm index` first.');
+      process.exit(1);
+    }
+
+    // Build graph
+    const graph = new KnowledgeGraph();
+    const builder = new GraphBuilder(graph);
+    builder.buildFromIndex(index);
+
+    const stats = graph.getStats();
+    console.error(`📊 Graph: ${stats.nodeCount} nodes, ${stats.edgeCount} edges\n`);
+
+    // Get data
+    let nodes = graph.getAllNodes();
+    let edges = graph.getAllEdges();
+
+    // Apply filter
+    if (options.filter) {
+      nodes = nodes.filter((n) => n.type === options.filter);
+      const nodeIds = new Set(nodes.map((n) => n.id));
+      edges = edges.filter((e) => nodeIds.has(e.source) && nodeIds.has(e.target));
+    }
+
+    // Limit nodes
+    if (nodes.length > maxNodes) {
+      console.error(`⚠️  Limiting to ${maxNodes} nodes (from ${nodes.length})`);
+      nodes = nodes.slice(0, maxNodes);
+      const nodeIds = new Set(nodes.map((n) => n.id));
+      edges = edges.filter((e) => nodeIds.has(e.source) && nodeIds.has(e.target));
+    }
+
+    // Format output
+    let output: string;
+    if (options.format === 'dot') {
+      output = graphToDot(nodes, edges);
+    } else if (options.format === 'mermaid') {
+      output = graphToMermaid(nodes, edges);
+    } else {
+      output = JSON.stringify({ nodes, edges }, null, 2);
+    }
+
+    // Write output
+    if (options.output) {
+      fs.writeFileSync(options.output, output);
+      console.error(`✅ Exported to ${options.output}`);
+    } else {
+      console.log(output);
+    }
+  });
+
+// Graph format helpers
+function graphToDot(
+  nodes: Array<{ id: string; type: string; name: string }>,
+  edges: Array<{ source: string; target: string; type: string }>
+): string {
+  const lines: string[] = ['digraph KnowledgeGraph {', '  rankdir=LR;', '  node [shape=box];', ''];
+
+  // Node styles by type
+  const styles: Record<string, string> = {
+    file: 'shape=folder,style=filled,fillcolor=lightyellow',
+    class: 'shape=box,style=filled,fillcolor=lightblue',
+    interface: 'shape=box,style=filled,fillcolor=lightgreen',
+    function: 'shape=ellipse,style=filled,fillcolor=lightsalmon',
+    method: 'shape=ellipse,style=filled,fillcolor=peachpuff',
+  };
+
+  for (const node of nodes) {
+    const style = styles[node.type] || 'shape=box';
+    const label = node.name.replace(/"/g, '\\"');
+    lines.push(`  "${node.id}" [label="${label}" ${style}];`);
+  }
+
+  lines.push('');
+
+  // Edge styles
+  const edgeStyles: Record<string, string> = {
+    calls: 'color=blue',
+    extends: 'color=red,style=bold',
+    implements: 'color=green,style=dashed',
+    imports: 'color=gray',
+    contains: 'color=black,style=dotted',
+  };
+
+  for (const edge of edges) {
+    const style = edgeStyles[edge.type] || '';
+    lines.push(`  "${edge.source}" -> "${edge.target}" [${style}];`);
+  }
+
+  lines.push('}');
+  return lines.join('\n');
+}
+
+function graphToMermaid(
+  nodes: Array<{ id: string; type: string; name: string }>,
+  edges: Array<{ source: string; target: string; type: string }>
+): string {
+  const lines: string[] = ['graph LR'];
+
+  // Create safe IDs and track them
+  const idMap = new Map<string, string>();
+  let counter = 0;
+
+  const getSafeId = (id: string): string => {
+    if (!idMap.has(id)) {
+      idMap.set(id, `n${counter++}`);
+    }
+    return idMap.get(id)!;
+  };
+
+  // Node shapes by type
+  const shapes: Record<string, [string, string]> = {
+    file: ['[(', ')]'],
+    class: ['[[', ']]'],
+    interface: ['{{', '}}'],
+    function: ['([', '])'],
+    method: ['([', '])'],
+  };
+
+  for (const node of nodes) {
+    const [open, close] = shapes[node.type] || ['[', ']'];
+    const safeId = getSafeId(node.id);
+    const label = node.name.replace(/"/g, "'");
+    lines.push(`  ${safeId}${open}"${label}"${close}`);
+  }
+
+  // Edge arrows
+  const arrows: Record<string, string> = {
+    calls: '-->',
+    extends: '-.->',
+    implements: '-.->',
+    imports: '-->',
+    contains: '-->',
+  };
+
+  for (const edge of edges) {
+    const arrow = arrows[edge.type] || '-->';
+    const sourceId = getSafeId(edge.source);
+    const targetId = getSafeId(edge.target);
+    if (idMap.has(edge.source) && idMap.has(edge.target)) {
+      lines.push(`  ${sourceId} ${arrow}|${edge.type}| ${targetId}`);
+    }
+  }
+
+  return lines.join('\n');
+}
+
+// ============================================================================
+// RELATED COMMAND
+// ============================================================================
+
+program
+  .command('related <symbol>')
+  .description('Find symbols related to the given symbol')
+  .option('-p, --path <path>', 'Project path', process.cwd())
+  .option('-d, --depth <number>', 'Maximum relationship depth', '2')
+  .option('-t, --types <types>', 'Filter by relation types (comma-separated)')
+  .action(async (symbol, options) => {
+    const projectRoot = path.resolve(options.path);
+    const depth = parseInt(options.depth, 10);
+    const types = options.types?.split(',');
+
+    const indexer = new Indexer({ projectRoot });
+    const index = indexer.loadIndex();
+
+    if (!index) {
+      console.log('❌ No index found. Run `ucm index` first.');
+      process.exit(1);
+    }
+
+    const engine = new ContextEngine({ projectRoot, index });
+    const related = engine.findRelated(symbol, { depth, types });
+
+    if (related.length === 0) {
+      console.log(`\n❌ No relations found for "${symbol}"`);
+      console.log('   Make sure the symbol exists in your indexed codebase.');
+      return;
+    }
+
+    console.log(`\n🔗 ${related.length} symbols related to "${symbol}":\n`);
+
+    // Group by relation type
+    const byRelation: Record<string, typeof related> = {};
+    for (const rel of related) {
+      const key = rel.relation;
+      if (!byRelation[key]) byRelation[key] = [];
+      byRelation[key].push(rel);
+    }
+
+    for (const [relation, items] of Object.entries(byRelation)) {
+      console.log(`  ${relation}:`);
+      for (const item of items) {
+        const loc = item.file ? `  (${item.file}${item.line ? ':' + item.line : ''})` : '';
+        console.log(`    • ${item.name} [${item.type}]${loc}`);
+      }
+      console.log();
+    }
+  });
+
+// ============================================================================
+// CALLERS COMMAND
+// ============================================================================
+
+program
+  .command('callers <function>')
+  .description('Find all callers of a function or method')
+  .option('-p, --path <path>', 'Project path', process.cwd())
+  .action(async (functionName, options) => {
+    const projectRoot = path.resolve(options.path);
+
+    const indexer = new Indexer({ projectRoot });
+    const index = indexer.loadIndex();
+
+    if (!index) {
+      console.log('❌ No index found. Run `ucm index` first.');
+      process.exit(1);
+    }
+
+    const engine = new ContextEngine({ projectRoot, index });
+    const callers = engine.findCallers(functionName);
+
+    if (callers.length === 0) {
+      console.log(`\n❌ No callers found for "${functionName}"`);
+      console.log('   The function may not be called, or may not be in the index.');
+      return;
+    }
+
+    console.log(`\n📞 ${callers.length} callers of "${functionName}":\n`);
+
+    for (const caller of callers) {
+      const loc = caller.file ? `${caller.file}${caller.line ? ':' + caller.line : ''}` : '';
+      console.log(`  • ${caller.name} [${caller.type}]`);
+      if (loc) console.log(`    ${loc}`);
+    }
+    console.log();
+  });
+
+// ============================================================================
+// INHERITANCE COMMAND
+// ============================================================================
+
+program
+  .command('inheritance <class>')
+  .description('Show class inheritance hierarchy')
+  .option('-p, --path <path>', 'Project path', process.cwd())
+  .action(async (className, options) => {
+    const projectRoot = path.resolve(options.path);
+
+    const indexer = new Indexer({ projectRoot });
+    const index = indexer.loadIndex();
+
+    if (!index) {
+      console.log('❌ No index found. Run `ucm index` first.');
+      process.exit(1);
+    }
+
+    const engine = new ContextEngine({ projectRoot, index });
+    const hierarchy = engine.getInheritance(className);
+
+    console.log(`\n🌳 Inheritance for "${className}":\n`);
+
+    if (hierarchy.parents.length > 0) {
+      console.log('  Parents (extends/implements):');
+      for (const parent of hierarchy.parents) {
+        console.log(`    ↑ ${parent}`);
+      }
+    } else {
+      console.log('  No parents found.');
+    }
+
+    console.log();
+
+    if (hierarchy.children.length > 0) {
+      console.log('  Children (extended by):');
+      for (const child of hierarchy.children) {
+        console.log(`    ↓ ${child}`);
+      }
+    } else {
+      console.log('  No children found.');
+    }
+
+    console.log();
+  });
+
+// ============================================================================
+// SERVE COMMAND (MCP Server)
+// ============================================================================
+
+program
+  .command('serve')
+  .description('Start the UCM MCP server for Claude Code integration')
+  .option('-p, --path <path>', 'Project path', process.cwd())
+  .option('-w, --watch', 'Enable file watching')
+  .action(async (options) => {
+    const projectRoot = path.resolve(options.path);
+    const config = await loadConfig(projectRoot);
+
+    console.error(`🚀 Starting UCM MCP Server for ${projectRoot}...`);
+
+    // Dynamically import the server to avoid circular deps
+    const { UCMServer } = await import('./mcp/server.js');
+
+    const indexer = new Indexer({ projectRoot });
+    let index = indexer.loadIndex();
+
+    if (!index) {
+      console.error('📇 No existing index, creating...');
+      index = await indexer.index();
+      await indexer.saveIndex(index);
+    }
+
+    const engine = new ContextEngine({
+      projectRoot,
+      index,
+      enableEmbeddings: config.enableEmbeddings,
+    });
+    const server = new UCMServer(projectRoot, engine);
+
+    if (options.watch || config.mcp?.watchMode) {
+      server.startWatch();
+      console.error('👀 File watching enabled');
+    }
+
+    console.error('✅ MCP Server ready. Waiting for connections...\n');
+
+    // Run the server (stdio transport)
+    await server.run();
+  });
+
+// ============================================================================
+// CONFIG COMMAND
+// ============================================================================
+
+program
+  .command('config')
+  .description('Generate or show UCM configuration')
+  .option('-p, --path <path>', 'Project path', process.cwd())
+  .option('-i, --init', 'Generate a new config file')
+  .option('-f, --format <format>', 'Config format: json or js', 'json')
+  .option('-s, --show', 'Show current effective config')
+  .option('-v, --validate', 'Validate existing config')
+  .action(async (options) => {
+    const projectRoot = path.resolve(options.path);
+
+    if (options.init) {
+      // Generate new config file
+      const format = options.format as 'json' | 'js';
+      const filename = format === 'json' ? '.ucmrc.json' : 'ucm.config.js';
+      const configPath = path.join(projectRoot, filename);
+
+      if (fs.existsSync(configPath)) {
+        console.log(`❌ Config file already exists: ${filename}`);
+        console.log('   Delete it first if you want to regenerate.');
+        process.exit(1);
+      }
+
+      const content = generateDefaultConfig(format);
+      fs.writeFileSync(configPath, content);
+      console.log(`✅ Created ${filename}`);
+      console.log('\nEdit this file to customize UCM behavior.');
+      return;
+    }
+
+    if (options.validate) {
+      // Validate existing config
+      const config = await loadConfig(projectRoot);
+      const { valid, errors } = validateConfig(config);
+
+      if (valid) {
+        console.log('✅ Configuration is valid');
+      } else {
+        console.log('❌ Configuration errors:');
+        for (const error of errors) {
+          console.log(`   - ${error}`);
+        }
+        process.exit(1);
+      }
+      return;
+    }
+
+    // Show current config (default action)
+    const config = await loadConfig(projectRoot);
+    console.log('📋 Current UCM Configuration:\n');
+    console.log(JSON.stringify(config, null, 2));
+  });
+
+// ============================================================================
+// VERSION INFO
+// ============================================================================
+
+program
+  .command('info')
+  .description('Show UCM version and system information')
+  .action(async () => {
+    console.log(`\n📦 Universal Context Memory (UCM) v${VERSION}\n`);
+    console.log('System Information:');
+    console.log(`  Node.js: ${process.version}`);
+    console.log(`  Platform: ${process.platform}`);
+    console.log(`  Architecture: ${process.arch}`);
+    console.log(`  Working Directory: ${process.cwd()}`);
+    console.log('\nFeatures:');
+    console.log('  ✓ Tree-sitter AST parsing (21 languages)');
+    console.log('  ✓ Incremental indexing');
+    console.log('  ✓ BM25 keyword search');
+    console.log('  ✓ Knowledge graph analysis');
+    console.log('  ✓ Semantic chunking');
+    console.log('  ✓ MCP server for Claude Code');
+    console.log('  ✓ Context file generation (CLAUDE.md, .cursorrules, etc.)');
+    console.log('\nDocumentation: https://github.com/your-repo/ucm');
   });
 
 program.parse();

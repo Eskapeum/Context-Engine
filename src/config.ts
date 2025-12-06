@@ -47,6 +47,8 @@ export interface UCMConfig {
 
   /** Output configuration */
   output?: {
+    /** Generate UCM.md (universal context file) */
+    ucmMd?: boolean;
     /** Generate CONTEXT.md */
     contextMd?: boolean;
     /** Generate CLAUDE.md */
@@ -113,6 +115,7 @@ export const DEFAULT_CONFIG: Required<UCMConfig> = {
     dimensions: 384,
   },
   output: {
+    ucmMd: true,
     contextMd: true,
     claudeMd: true,
     cursorRules: true,
@@ -297,6 +300,7 @@ export function generateDefaultConfig(format: 'json' | 'js' = 'json'): string {
         maxTokens: 50000,
         enableEmbeddings: false,
         output: {
+          ucmMd: true,
           contextMd: true,
           claudeMd: true,
           cursorRules: true,
@@ -344,6 +348,7 @@ export default {
 
   // Output configuration
   output: {
+    ucmMd: true,
     contextMd: true,
     claudeMd: true,
     cursorRules: true,

@@ -51,6 +51,7 @@ export {
 
 export {
   ContextGenerator,
+  generateUcmMd,
   generateContextMd,
   generateClaudeMd,
   generateCursorRules,

@@ -409,14 +409,15 @@ MIT License - see [LICENSE](LICENSE) for details.
 ## 🙏 Acknowledgments
 
 - Inspired by [Augment Code](https://augmentcode.com) for proving context engines matter
-- Built with love by [Lyceum AI Academy](https://lyceumacademy.ai)
+- Built with love by [Lyceum AI Academy](https://lyceumaiacademy.com)
 - Special thanks to all contributors!
 
 ## 📬 Contact
 
 - **Discord**: [Join our community](https://discord.gg/lyceumacademy)
-- **Twitter**: [@LyceumAI](https://twitter.com/LyceumAI)
-- **Email**: support@lyceumacademy.ai
+- **Twitter**: [@LyceumAI](https://twitter.com/Lyceumaiacademy)
+- **Email**: support@lyceumaiacademy.com
+- **BuyMeCoffee**: https://buymeacoffee.com/s2fstudio 
 
 ---
 
@@ -425,5 +426,7 @@ MIT License - see [LICENSE](LICENSE) for details.
 </p>
 
 <p align="center">
-  <sub>Part of the <a href="https://lyceumacademy.ai">Lyceum AI Academy</a> mission to train 100,000 students in Context Engineering by 2030</sub>
+  <sub>Part of the <a href="https://lyceumaiacademy.com">Lyceum AI Academy</a> mission to train 100,000 students in Context Engineering by 2030</sub>
 </p>
+
+

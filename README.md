@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="assets/ucm-logo.svg" width="200" alt="Universal Context Memory Logo">
+  <img src="assets/ucm-logo.svg" width="200" alt="Universal Context Engine Logo">
 </p>
 
-<h1 align="center">Universal Context Memory (UCM) v2.0</h1>
+<h1 align="center">Universal Context Engine (UCE) v2.0</h1>
 
 <p align="center">
   <strong>The most intelligent context engine for AI coding assistants</strong>
@@ -10,24 +10,24 @@
 
 <p align="center">
   <a href="https://www.npmjs.com/package/universal-context-memory"><img src="https://img.shields.io/npm/v/universal-context-memory.svg?style=flat-square" alt="npm version"></a>
-  <a href="https://github.com/LyceumAI/universal-context-memory/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square" alt="License"></a>
-  <a href="https://github.com/LyceumAI/universal-context-memory/actions"><img src="https://img.shields.io/github/actions/workflow/status/LyceumAI/universal-context-memory/ci.yml?style=flat-square" alt="CI Status"></a>
+  <a href="https://github.com/Eskapeum/Context-Engine/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square" alt="License"></a>
+  <a href="https://github.com/Eskapeum/Context-Engine/actions"><img src="https://img.shields.io/github/actions/workflow/status/Eskapeum/Context-Engine/ci.yml?style=flat-square" alt="CI Status"></a>
 </p>
 
 <p align="center">
-  <a href="#-features">Features</a> •
-  <a href="#-installation">Installation</a> •
-  <a href="#-quick-start">Quick Start</a> •
-  <a href="#-commands">Commands</a> •
-  <a href="#-api">API</a> •
-  <a href="#-mcp-server">MCP Server</a>
+  <a href="#features">Features</a> •
+  <a href="#installation">Installation</a> •
+  <a href="#quick-start">Quick Start</a> •
+  <a href="#commands">Commands</a> •
+  <a href="#api">API</a> •
+  <a href="#mcp-server">MCP Server</a>
 </p>
 
 ---
 
-## What is UCM?
+## What is UCE?
 
-UCM indexes your codebase and provides intelligent context retrieval for AI coding assistants. Unlike cloud-based solutions, UCM runs **100% locally** and stores everything in your project.
+Universal Context Engine indexes your codebase and provides intelligent context retrieval for AI coding assistants. Unlike cloud-based solutions, UCE runs **100% locally** and stores everything in your project.
 
 ```bash
 # Install and index your project
@@ -93,6 +93,7 @@ Creates:
 ```
 your-project/
 ├── .context/index.json      # Codebase index
+├── UCM.md                   # Universal context (any AI)
 ├── CONTEXT.md               # Generic LLM context
 ├── CLAUDE.md                # Claude Code specific
 ├── .cursorrules             # Cursor IDE
@@ -121,7 +122,7 @@ npx ucm watch
 
 | Command | Description |
 |---------|-------------|
-| `ucm init` | Initialize UCM in a project |
+| `ucm init` | Initialize UCE in a project |
 | `ucm index` | Re-index the codebase |
 | `ucm watch` | Watch for changes and auto-update |
 | `ucm stats` | Show index statistics |
@@ -168,6 +169,7 @@ Create `.ucmrc.json`:
   "maxTokens": 50000,
   "enableEmbeddings": false,
   "output": {
+    "ucmMd": true,
     "contextMd": true,
     "claudeMd": true,
     "cursorRules": true,
@@ -226,7 +228,7 @@ generator.generateAll();
 
 ## MCP Server
 
-UCM includes a Model Context Protocol server for direct AI assistant integration.
+UCE includes a Model Context Protocol server for direct AI assistant integration.
 
 ### Start Server
 
@@ -266,7 +268,7 @@ Add to your MCP configuration:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  UCM v2.0 Architecture                                       │
+│  Universal Context Engine v2.0 Architecture                  │
 ├─────────────────────────────────────────────────────────────┤
 │                                                              │
 │  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐   │
@@ -291,7 +293,7 @@ Add to your MCP configuration:
 
 ## Comparison
 
-| Feature | UCM | Cloud Alternatives |
+| Feature | UCE | Cloud Alternatives |
 |---------|-----|-------------------|
 | Data location | **Your project** | Their cloud |
 | Privacy | **100% local** | Code uploaded |
@@ -305,8 +307,8 @@ Add to your MCP configuration:
 We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ```bash
-git clone https://github.com/LyceumAI/universal-context-memory.git
-cd universal-context-memory
+git clone https://github.com/Eskapeum/Context-Engine.git
+cd Context-Engine
 npm install
 npm run build
 npm test
@@ -321,7 +323,7 @@ MIT License - see [LICENSE](LICENSE)
 - [Installation Guide](INSTALLATION.md)
 - [Contributing](CONTRIBUTING.md)
 - [Changelog](CHANGELOG.md)
-- [GitHub Issues](https://github.com/LyceumAI/universal-context-memory/issues)
+- [GitHub Issues](https://github.com/Eskapeum/Context-Engine/issues)
 
 ---
 

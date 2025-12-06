@@ -1,6 +1,6 @@
 # Installation Guide
 
-Complete installation and setup guide for Universal Context Memory (UCM) v2.0.
+Complete installation and setup guide for Universal Context Engine (UCE) v2.0.
 
 ## Table of Contents
 
@@ -46,8 +46,8 @@ pnpm add universal-context-memory
 
 ```bash
 # Clone the repository
-git clone https://github.com/LyceumAI/universal-context-memory.git
-cd universal-context-memory
+git clone https://github.com/Eskapeum/Context-Engine.git
+cd Context-Engine
 
 # Install dependencies
 npm install
@@ -70,6 +70,7 @@ npx ucm init
 
 This creates:
 - `.context/index.json` - Full codebase index
+- `UCM.md` - Universal context (any AI)
 - `CONTEXT.md` - Generic LLM context
 - `CLAUDE.md` - Claude Code specific
 - `.cursorrules` - Cursor IDE rules
@@ -109,6 +110,7 @@ Create `.ucmrc.json` in your project root:
   "maxTokens": 50000,
   "enableEmbeddings": false,
   "output": {
+    "ucmMd": true,
     "contextMd": true,
     "claudeMd": true,
     "cursorRules": true,
@@ -135,6 +137,7 @@ export default {
   ignore: ['**/dist/**'],
   enableEmbeddings: false,
   output: {
+    ucmMd: true,
     contextMd: true,
     claudeMd: true,
   },
@@ -150,6 +153,7 @@ export default {
 | `priorityFiles` | string[] | [] | Files to prioritize in context |
 | `maxTokens` | number | 50000 | Maximum tokens for context output |
 | `enableEmbeddings` | boolean | false | Enable semantic embeddings |
+| `output.ucmMd` | boolean | true | Generate UCM.md (universal) |
 | `output.contextMd` | boolean | true | Generate CONTEXT.md |
 | `output.claudeMd` | boolean | true | Generate CLAUDE.md |
 | `output.cursorRules` | boolean | true | Generate .cursorrules |
@@ -172,7 +176,7 @@ npx ucm config --validate
 
 ## MCP Server Setup
 
-UCM includes a Model Context Protocol (MCP) server for direct AI assistant integration.
+UCE includes a Model Context Protocol (MCP) server for direct AI assistant integration.
 
 ### Start MCP Server
 
@@ -212,19 +216,19 @@ Add to your Claude Code MCP configuration:
 
 ### Claude Code
 
-UCM automatically generates `CLAUDE.md` which Claude Code reads on startup.
+UCE automatically generates `CLAUDE.md` which Claude Code reads on startup.
 
 ### Cursor IDE
 
-UCM generates `.cursorrules` which Cursor automatically loads.
+UCE generates `.cursorrules` which Cursor automatically loads.
 
 ### GitHub Copilot
 
-UCM generates `.github/copilot-instructions.md` which Copilot uses for context.
+UCE generates `.github/copilot-instructions.md` which Copilot uses for context.
 
 ### VS Code
 
-Install the UCM extension (coming soon) or use the MCP server integration.
+Install the UCE extension (coming soon) or use the MCP server integration.
 
 ## Programmatic Usage
 
@@ -335,9 +339,9 @@ DEBUG=ucm:* npx ucm index
 
 ### Getting Help
 
-- **GitHub Issues**: [Report a bug](https://github.com/LyceumAI/universal-context-memory/issues)
+- **GitHub Issues**: [Report a bug](https://github.com/Eskapeum/Context-Engine/issues)
 - **Discord**: [Join our community](https://discord.gg/lyceumacademy)
-- **Documentation**: [Full docs](https://github.com/LyceumAI/universal-context-memory#readme)
+- **Documentation**: [Full docs](https://github.com/Eskapeum/Context-Engine#readme)
 
 ## Next Steps
 

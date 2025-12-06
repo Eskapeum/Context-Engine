@@ -6,12 +6,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/LyceumAI/universal-context-memory.git"
+    "url": "git+https://github.com/Eskapeum/Context-Memory.git"
   },
   "bugs": {
-    "url": "https://github.com/LyceumAI/universal-context-memory/issues"
+    "url": "https://github.com/Eskapeum/Context-Memory/issues"
   },
-  "homepage": "https://github.com/LyceumAI/universal-context-memory#readme",
+  "homepage": "https://github.com/Eskapeum/Context-Memory#readme",
   "keywords": [
     "ai",
     "context",
@@ -51,8 +51,6 @@
     "dev": "tsup --watch",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
-    "lint": "eslint src --ext .ts",
-    "lint:fix": "eslint src --ext .ts --fix",
     "format": "prettier --write \"src/**/*.ts\"",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run build",
@@ -67,11 +65,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
-    "@typescript-eslint/eslint-plugin": "^7.0.0",
-    "@typescript-eslint/parser": "^7.0.0",
     "@vitest/coverage-v8": "^1.2.0",
-    "eslint": "^8.56.0",
-    "eslint-config-prettier": "^9.1.0",
     "prettier": "^3.2.0",
     "tsup": "^8.0.1",
     "typescript": "^5.3.3",

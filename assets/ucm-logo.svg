@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Background circle -->
+  <circle cx="100" cy="100" r="95" fill="#1a1a2e" stroke="#16213e" stroke-width="2"/>
+  
+  <!-- Brain outline -->
+  <path d="M60 90 Q45 70 65 55 Q85 40 100 50 Q115 40 135 55 Q155 70 140 90 Q150 110 135 125 Q120 145 100 140 Q80 145 65 125 Q50 110 60 90" 
+        fill="none" stroke="#00d9ff" stroke-width="3" stroke-linecap="round"/>
+  
+  <!-- Neural connections -->
+  <circle cx="70" cy="75" r="5" fill="#00d9ff"/>
+  <circle cx="100" cy="60" r="5" fill="#00d9ff"/>
+  <circle cx="130" cy="75" r="5" fill="#00d9ff"/>
+  <circle cx="75" cy="110" r="5" fill="#00d9ff"/>
+  <circle cx="100" cy="100" r="7" fill="#00d9ff"/>
+  <circle cx="125" cy="110" r="5" fill="#00d9ff"/>
+  <circle cx="100" cy="130" r="5" fill="#00d9ff"/>
+  
+  <!-- Connection lines -->
+  <line x1="70" y1="75" x2="100" y2="60" stroke="#00d9ff" stroke-width="2" opacity="0.5"/>
+  <line x1="100" y1="60" x2="130" y2="75" stroke="#00d9ff" stroke-width="2" opacity="0.5"/>
+  <line x1="70" y1="75" x2="75" y2="110" stroke="#00d9ff" stroke-width="2" opacity="0.5"/>
+  <line x1="130" y1="75" x2="125" y2="110" stroke="#00d9ff" stroke-width="2" opacity="0.5"/>
+  <line x1="70" y1="75" x2="100" y2="100" stroke="#00d9ff" stroke-width="2" opacity="0.5"/>
+  <line x1="130" y1="75" x2="100" y2="100" stroke="#00d9ff" stroke-width="2" opacity="0.5"/>
+  <line x1="75" y1="110" x2="100" y2="100" stroke="#00d9ff" stroke-width="2" opacity="0.5"/>
+  <line x1="125" y1="110" x2="100" y2="100" stroke="#00d9ff" stroke-width="2" opacity="0.5"/>
+  <line x1="75" y1="110" x2="100" y2="130" stroke="#00d9ff" stroke-width="2" opacity="0.5"/>
+  <line x1="125" y1="110" x2="100" y2="130" stroke="#00d9ff" stroke-width="2" opacity="0.5"/>
+  <line x1="100" y1="100" x2="100" y2="130" stroke="#00d9ff" stroke-width="2" opacity="0.5"/>
+  
+  <!-- Memory/Code brackets -->
+  <text x="50" y="165" font-family="monospace" font-size="20" fill="#00d9ff" font-weight="bold">{</text>
+  <text x="145" y="165" font-family="monospace" font-size="20" fill="#00d9ff" font-weight="bold">}</text>
+  
+  <!-- UCM text -->
+  <text x="100" y="165" font-family="Arial, sans-serif" font-size="18" fill="white" text-anchor="middle" font-weight="bold">UCM</text>
+</svg>

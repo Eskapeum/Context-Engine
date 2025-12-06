@@ -1,0 +1,86 @@
+{
+  "name": "universal-context-memory",
+  "version": "1.0.0",
+  "description": "Auto-indexing memory for AI coding assistants - baked into your project",
+  "author": "Tobi Daniel Adelaja <tobi@lyceumacademy.ai>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LyceumAI/universal-context-memory.git"
+  },
+  "bugs": {
+    "url": "https://github.com/LyceumAI/universal-context-memory/issues"
+  },
+  "homepage": "https://github.com/LyceumAI/universal-context-memory#readme",
+  "keywords": [
+    "ai",
+    "context",
+    "memory",
+    "claude",
+    "cursor",
+    "copilot",
+    "codex",
+    "llm",
+    "indexing",
+    "codebase",
+    "context-engineering",
+    "ai-assistant",
+    "developer-tools"
+  ],
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "ucm": "dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build",
+    "clean": "rm -rf dist",
+    "release": "npm run build && npm publish"
+  },
+  "dependencies": {
+    "chokidar": "^3.6.0",
+    "commander": "^12.1.0",
+    "glob": "^10.3.10",
+    "ignore": "^5.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "@vitest/coverage-v8": "^1.2.0",
+    "eslint": "^8.56.0",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.2.0",
+    "tsup": "^8.0.1",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

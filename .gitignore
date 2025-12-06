@@ -1,0 +1,53 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+out/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test coverage
+coverage/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Package manager locks (optional - you may want to commit these)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# UCM generated files (for testing)
+.context/
+CONTEXT.md
+CLAUDE.md
+.cursorrules
+.github/copilot-instructions.md
+
+# Misc
+*.tgz
+.npmrc

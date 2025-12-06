@@ -1,0 +1,29 @@
+# Source files
+src/
+
+# Tests
+test/
+coverage/
+vitest.config.ts
+
+# Development config
+.eslintrc*
+eslint.config.js
+.prettierrc
+tsconfig.json
+tsup.config.ts
+
+# GitHub
+.github/
+
+# IDE
+.idea/
+.vscode/
+
+# Misc
+*.log
+*.tgz
+.DS_Store
+
+# Assets (keep in repo but not in package)
+assets/

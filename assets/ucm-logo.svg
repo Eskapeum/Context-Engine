@@ -33,5 +33,5 @@
   <text x="145" y="165" font-family="monospace" font-size="20" fill="#00d9ff" font-weight="bold">}</text>
   
   <!-- UCM text -->
-  <text x="100" y="165" font-family="Arial, sans-serif" font-size="18" fill="white" text-anchor="middle" font-weight="bold">UCM</text>
+  <text x="100" y="165" font-family="Arial, sans-serif" font-size="18" fill="white" text-anchor="middle" font-weight="bold">UCE</text>
 </svg>

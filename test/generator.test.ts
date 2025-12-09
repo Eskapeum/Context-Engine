@@ -193,9 +193,13 @@ export class UserAPI {
       const index = await indexer.index();
       const generator = new ContextGenerator({ projectRoot: testDir, index });
 
+      // Default: only UCE.md
       generator.generateAll();
+      expect(fs.existsSync(path.join(testDir, 'UCE.md'))).toBe(true);
 
-      // Check files were created
+      // With all option: generates all files
+      generator.generateAll({ all: true });
+      expect(fs.existsSync(path.join(testDir, 'UCE.md'))).toBe(true);
       expect(fs.existsSync(path.join(testDir, 'CONTEXT.md'))).toBe(true);
       expect(fs.existsSync(path.join(testDir, 'CLAUDE.md'))).toBe(true);
       expect(fs.existsSync(path.join(testDir, '.cursorrules'))).toBe(true);

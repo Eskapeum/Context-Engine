@@ -1373,10 +1373,60 @@ export class MCPServer {
     }
   }
 
+  private autoRefreshInterval: ReturnType<typeof setInterval> | null = null;
+  private autoRefreshMinutes: number = 5;
+
   /**
-   * Start HTTP server for MCP
+   * Start HTTP server for MCP with auto-indexing
+   *
+   * @param port - Port to listen on (default: 3333)
+   * @param options - Auto-indexing options
    */
-  start(port: number = 3333): Promise<void> {
+  async start(
+    port: number = 3333,
+    options?: {
+      /** Auto-index on startup (default: true) */
+      autoIndex?: boolean;
+      /** Auto-watch for file changes (default: true) */
+      autoWatch?: boolean;
+      /** Auto-refresh interval in minutes (default: 5, 0 to disable) */
+      autoRefreshMinutes?: number;
+    }
+  ): Promise<void> {
+    const opts = {
+      autoIndex: options?.autoIndex ?? true,
+      autoWatch: options?.autoWatch ?? true,
+      autoRefreshMinutes: options?.autoRefreshMinutes ?? 5,
+    };
+
+    // Auto-index on startup
+    if (opts.autoIndex) {
+      console.log('📇 Auto-indexing codebase...');
+      await this.indexer.index();
+      console.log('✅ Index ready');
+    }
+
+    // Auto-start file watcher
+    if (opts.autoWatch) {
+      console.log('👀 Starting file watcher...');
+      await this.handleWatchStart({ ignore: ['node_modules', '.git', 'dist', '.uce'] });
+    }
+
+    // Set up periodic auto-refresh
+    if (opts.autoRefreshMinutes > 0) {
+      this.autoRefreshMinutes = opts.autoRefreshMinutes;
+      this.autoRefreshInterval = setInterval(
+        async () => {
+          console.log('🔄 Auto-refreshing index...');
+          // Invalidate caches to force fresh data
+          this.graph = null;
+          this.bm25 = null;
+          await this.indexer.index();
+        },
+        this.autoRefreshMinutes * 60 * 1000
+      );
+    }
+
     return new Promise((resolve) => {
       this.server = http.createServer(async (req, res) => {
         if (req.method === 'POST') {
@@ -1407,16 +1457,29 @@ export class MCPServer {
       });
 
       this.server.listen(port, () => {
-        console.log(`UCE MCP Server running on http://localhost:${port}`);
+        console.log(`🚀 UCE MCP Server running on http://localhost:${port}`);
+        console.log(`   Auto-refresh: every ${this.autoRefreshMinutes} minutes`);
         resolve();
       });
     });
   }
 
   /**
-   * Stop the server
+   * Stop the server and cleanup
    */
   stop(): Promise<void> {
+    // Stop auto-refresh interval
+    if (this.autoRefreshInterval) {
+      clearInterval(this.autoRefreshInterval);
+      this.autoRefreshInterval = null;
+    }
+
+    // Stop file watcher
+    if (this.watcher) {
+      this.watcher.stop();
+      this.watcher = null;
+    }
+
     return new Promise((resolve) => {
       if (this.server) {
         this.server.close(() => resolve());

@@ -681,33 +681,53 @@ export class ContextGenerator {
 
   /**
    * Generate all context files
+   *
+   * By default, generates only UCE.md (the universal context file).
+   * Use options to generate additional tool-specific files.
    */
-  public generateAll(): void {
+  public generateAll(options?: {
+    /** Generate CLAUDE.md for Claude Code */
+    claude?: boolean;
+    /** Generate CONTEXT.md (generic format) */
+    context?: boolean;
+    /** Generate .cursorrules for Cursor IDE */
+    cursor?: boolean;
+    /** Generate .github/copilot-instructions.md for GitHub Copilot */
+    copilot?: boolean;
+    /** Generate all tool-specific files */
+    all?: boolean;
+  }): void {
     const { projectRoot } = this.config;
+    const opts = options || {};
 
-    // Generate UCE.md (primary universal context file)
+    // Always generate UCE.md (primary universal context file)
     const uceMd = generateUceMd(this.config);
     fs.writeFileSync(path.join(projectRoot, 'UCE.md'), uceMd);
 
-    // Generate CONTEXT.md
-    const contextMd = generateContextMd(this.config);
-    fs.writeFileSync(path.join(projectRoot, 'CONTEXT.md'), contextMd);
-
-    // Generate CLAUDE.md
-    const claudeMd = generateClaudeMd(this.config);
-    fs.writeFileSync(path.join(projectRoot, 'CLAUDE.md'), claudeMd);
-
-    // Generate .cursorrules
-    const cursorRules = generateCursorRules(this.config);
-    fs.writeFileSync(path.join(projectRoot, '.cursorrules'), cursorRules);
-
-    // Generate .github/copilot-instructions.md
-    const githubDir = path.join(projectRoot, '.github');
-    if (!fs.existsSync(githubDir)) {
-      fs.mkdirSync(githubDir, { recursive: true });
+    // Generate additional files only if requested
+    if (opts.all || opts.context) {
+      const contextMd = generateContextMd(this.config);
+      fs.writeFileSync(path.join(projectRoot, 'CONTEXT.md'), contextMd);
     }
-    const copilotInstructions = generateCopilotInstructions(this.config);
-    fs.writeFileSync(path.join(githubDir, 'copilot-instructions.md'), copilotInstructions);
+
+    if (opts.all || opts.claude) {
+      const claudeMd = generateClaudeMd(this.config);
+      fs.writeFileSync(path.join(projectRoot, 'CLAUDE.md'), claudeMd);
+    }
+
+    if (opts.all || opts.cursor) {
+      const cursorRules = generateCursorRules(this.config);
+      fs.writeFileSync(path.join(projectRoot, '.cursorrules'), cursorRules);
+    }
+
+    if (opts.all || opts.copilot) {
+      const githubDir = path.join(projectRoot, '.github');
+      if (!fs.existsSync(githubDir)) {
+        fs.mkdirSync(githubDir, { recursive: true });
+      }
+      const copilotInstructions = generateCopilotInstructions(this.config);
+      fs.writeFileSync(path.join(githubDir, 'copilot-instructions.md'), copilotInstructions);
+    }
   }
 
   /**

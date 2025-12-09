@@ -17,7 +17,7 @@ import { loadConfig, validateConfig, generateDefaultConfig, type UCMConfig } fro
 import * as fs from 'fs';
 import * as path from 'path';
 
-const VERSION = '2.0.1';
+const VERSION = '2.1.0';
 
 const program = new Command();
 
@@ -77,18 +77,14 @@ site/
       console.log(`✅ Indexed ${index.totalFiles} files, ${index.totalSymbols} symbols`);
     }
 
-    // Generate context files
+    // Generate context file (UCE.md only by default)
     const generator = new ContextGenerator({ projectRoot, index });
     generator.generateAll();
 
     if (!options.silent) {
-      console.log('✅ Generated context files:');
-      console.log('   - CONTEXT.md (generic LLM context)');
-      console.log('   - CLAUDE.md (Claude Code specific)');
-      console.log('   - .cursorrules (Cursor IDE)');
-      console.log('   - .github/copilot-instructions.md (GitHub Copilot)');
-      console.log('\n📁 Index stored in .context/');
-      console.log('\n💡 Tip: Commit these files to share context with your team!');
+      console.log('✅ Generated UCE.md (universal context file)');
+      console.log('\n📁 Index stored in .uce/');
+      console.log('\n💡 Tip: Commit UCE.md to share context with your team!');
     }
   });
 
@@ -123,7 +119,51 @@ program
     if (options.generate !== false) {
       const generator = new ContextGenerator({ projectRoot, index });
       generator.generateAll();
-      console.log('\n✅ Regenerated context files');
+      console.log('\n✅ Generated UCE.md');
+    }
+  });
+
+// ============================================================================
+// GENERATE COMMAND
+// ============================================================================
+
+program
+  .command('generate')
+  .description('Generate context files from existing index')
+  .option('-p, --path <path>', 'Project path', process.cwd())
+  .option('--all', 'Generate all tool-specific files (CLAUDE.md, .cursorrules, etc.)')
+  .option('--claude', 'Generate CLAUDE.md for Claude Code')
+  .option('--cursor', 'Generate .cursorrules for Cursor IDE')
+  .option('--copilot', 'Generate .github/copilot-instructions.md for GitHub Copilot')
+  .option('--context', 'Generate CONTEXT.md (generic format)')
+  .action(async (options) => {
+    const projectRoot = path.resolve(options.path);
+
+    const indexer = new Indexer({ projectRoot });
+    const index = indexer.loadIndex();
+
+    if (!index) {
+      console.log('❌ No index found. Run `uce index` first.');
+      process.exit(1);
+    }
+
+    const generator = new ContextGenerator({ projectRoot, index });
+    generator.generateAll({
+      all: options.all,
+      claude: options.claude,
+      cursor: options.cursor,
+      copilot: options.copilot,
+      context: options.context,
+    });
+
+    console.log('✅ Generated UCE.md');
+    if (options.all) {
+      console.log('   + CLAUDE.md, CONTEXT.md, .cursorrules, .github/copilot-instructions.md');
+    } else {
+      if (options.claude) console.log('   + CLAUDE.md');
+      if (options.context) console.log('   + CONTEXT.md');
+      if (options.cursor) console.log('   + .cursorrules');
+      if (options.copilot) console.log('   + .github/copilot-instructions.md');
     }
   });
 
@@ -355,7 +395,9 @@ program
     const projectRoot = path.resolve(options.path);
 
     const filesToRemove = [
+      '.uce',
       '.context',
+      'UCE.md',
       'CONTEXT.md',
       'CLAUDE.md',
       '.cursorrules',

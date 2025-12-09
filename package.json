@@ -1,6 +1,6 @@
 {
   "name": "universal-context-memory",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Auto-indexing memory for AI coding assistants - baked into your project",
   "author": "Tobi Daniel Adelaja <tobi@lyceumacademy.ai>",
   "license": "MIT",

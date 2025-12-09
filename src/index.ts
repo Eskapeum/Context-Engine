@@ -246,7 +246,7 @@ export async function startMCPServer(
 /**
  * Version of the UCE package.
  */
-export const VERSION = '2.0.0';
+export const VERSION = '2.0.1';
 
 // Default export for convenience
 export default {

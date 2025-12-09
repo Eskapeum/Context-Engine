@@ -1,7 +1,7 @@
 /**
  * Universal Context Engine - CLI
  *
- * Command-line interface for UCM.
+ * Command-line interface for UCE.
  * Provides commands for indexing, watching, querying, and managing context files.
  *
  * @module cli
@@ -17,7 +17,7 @@ import { loadConfig, validateConfig, generateDefaultConfig, type UCMConfig } fro
 import * as fs from 'fs';
 import * as path from 'path';
 
-const VERSION = '1.0.0';
+const VERSION = '2.0.1';
 
 const program = new Command();
 

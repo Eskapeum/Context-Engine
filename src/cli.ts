@@ -919,6 +919,131 @@ program
   });
 
 // ============================================================================
+// HELLO COMMAND (Guided Onboarding)
+// ============================================================================
+
+program
+  .command('hello')
+  .description('Guided onboarding for new users')
+  .option('-y, --yes', 'Auto-accept all prompts')
+  .option('-p, --path <path>', 'Project path', process.cwd())
+  .action(async (options) => {
+    const projectRoot = path.resolve(options.path);
+    const readline = await import('readline');
+
+    const ask = (question: string): Promise<string> => {
+      if (options.yes) return Promise.resolve('y');
+      const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+      });
+      return new Promise((resolve) => {
+        rl.question(question, (answer) => {
+          rl.close();
+          resolve(answer.trim().toLowerCase());
+        });
+      });
+    };
+
+    console.log('\n👋 Welcome to Universal Context Engine (UCE)!\n');
+    console.log('Your codebase in context. Let\'s get you set up.\n');
+
+    // System requirements check
+    console.log('Checking environment:');
+    const nodeVersion = process.version;
+    const [major] = nodeVersion.slice(1).split('.').map(Number);
+    if (major >= 18) {
+      console.log(`  ✓ Node.js ${nodeVersion} (>=18.0.0 required)`);
+    } else {
+      console.log(`  ✗ Node.js ${nodeVersion} - Please upgrade to v18+`);
+      process.exit(1);
+    }
+
+    // Check for npm
+    try {
+      const { execSync } = await import('child_process');
+      const npmVersion = execSync('npm --version', { encoding: 'utf-8' }).trim();
+      console.log(`  ✓ npm v${npmVersion}`);
+    } catch {
+      console.log('  ✗ npm not found');
+    }
+
+    console.log();
+
+    // Detect project
+    console.log('Detecting project:');
+    const packageJsonPath = path.join(projectRoot, 'package.json');
+    if (fs.existsSync(packageJsonPath)) {
+      console.log('  ✓ Found package.json');
+      try {
+        const pkg = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+        if (pkg.name) console.log(`  ✓ Project: ${pkg.name}`);
+      } catch {
+        // ignore parse errors
+      }
+    } else {
+      console.log('  ○ No package.json (not a Node.js project)');
+    }
+
+    // Count files
+    const { glob } = await import('glob');
+    const sourceFiles = await glob('**/*.{ts,js,tsx,jsx,py,go,rs,java,rb,php}', {
+      cwd: projectRoot,
+      ignore: ['**/node_modules/**', '**/dist/**', '**/build/**', '**/.git/**'],
+    });
+
+    // Detect languages
+    const extensions = new Set(sourceFiles.map((f) => path.extname(f)));
+    const langMap: Record<string, string> = {
+      '.ts': 'TypeScript', '.tsx': 'TypeScript',
+      '.js': 'JavaScript', '.jsx': 'JavaScript',
+      '.py': 'Python', '.go': 'Go', '.rs': 'Rust',
+      '.java': 'Java', '.rb': 'Ruby', '.php': 'PHP',
+    };
+    const detectedLangs = [...new Set([...extensions].map((e) => langMap[e]).filter(Boolean))];
+
+    if (detectedLangs.length > 0) {
+      console.log(`  ✓ Detected languages: ${detectedLangs.join(', ')}`);
+    }
+    console.log(`  ✓ Found ${sourceFiles.length} source files to index`);
+
+    console.log();
+
+    // Prompt to index
+    const proceed = await ask('Ready to index your codebase? [Y/n] ');
+    if (proceed && proceed !== 'y' && proceed !== '') {
+      console.log('\nNo problem! Run `ucm hello` when you\'re ready.\n');
+      return;
+    }
+
+    console.log('\nIndexing...');
+
+    const startTime = Date.now();
+    const indexer = new Indexer({ projectRoot });
+    const index = await indexer.index();
+    await indexer.saveIndex(index);
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+
+    console.log(`  ✓ Indexed ${index.totalFiles} files (${index.totalSymbols} symbols) in ${elapsed}s`);
+
+    // Show language breakdown
+    const langEntries = Object.entries(index.languageStats);
+    if (langEntries.length > 0) {
+      console.log(`  ✓ Languages: ${langEntries.map(([l, s]) => `${l} (${s.files})`).join(', ')}`);
+    }
+
+    console.log('\n✅ Done! Your codebase is indexed.\n');
+
+    console.log('Try these commands:');
+    console.log('  ucm query "authentication logic"   # Search your code');
+    console.log('  ucm status                         # View index status');
+    console.log('  ucm watch                          # Auto-update on changes');
+    console.log('  ucm serve                          # Start MCP server for AI tools');
+
+    console.log('\n📚 Learn more: https://github.com/Eskapeum/Context-Engine\n');
+  });
+
+// ============================================================================
 // VERSION INFO
 // ============================================================================
 
@@ -926,7 +1051,7 @@ program
   .command('info')
   .description('Show UCM version and system information')
   .action(async () => {
-    console.log(`\n📦 Universal Context Memory (UCM) v${VERSION}\n`);
+    console.log(`\n📦 Universal Context Engine (UCE) v${VERSION}\n`);
     console.log('System Information:');
     console.log(`  Node.js: ${process.version}`);
     console.log(`  Platform: ${process.platform}`);
@@ -940,7 +1065,7 @@ program
     console.log('  ✓ Semantic chunking');
     console.log('  ✓ MCP server for Claude Code');
     console.log('  ✓ Context file generation (CLAUDE.md, .cursorrules, etc.)');
-    console.log('\nDocumentation: https://github.com/your-repo/ucm');
+    console.log('\nDocumentation: https://github.com/Eskapeum/Context-Engine');
   });
 
 program.parse();

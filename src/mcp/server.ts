@@ -399,6 +399,14 @@ export class MCPServer {
           properties: {},
         },
       },
+      {
+        name: 'ucm_health',
+        description: 'Check server health status and get system information. Returns status (healthy/degraded/unhealthy), uptime, index stats, and memory usage.',
+        inputSchema: {
+          type: 'object',
+          properties: {},
+        },
+      },
     ];
   }
 
@@ -478,9 +486,70 @@ export class MCPServer {
       case 'ucm_graph_stats':
         return this.handleGraphStats();
 
+      case 'ucm_health':
+        return this.handleHealth();
+
       default:
         throw new Error(`Unknown tool: ${name}`);
     }
+  }
+
+  /**
+   * Handle health check
+   */
+  private serverStartTime = Date.now();
+  private queryCount = 0;
+
+  private async handleHealth(): Promise<{
+    status: 'healthy' | 'degraded' | 'unhealthy';
+    uptime: number;
+    indexLoaded: boolean;
+    indexAge: string | null;
+    queryCount: number;
+    memoryUsage: number;
+    fileCount: number;
+    symbolCount: number;
+  }> {
+    this.queryCount++;
+
+    const memoryMB = Math.round(process.memoryUsage().heapUsed / 1024 / 1024);
+    const uptimeSeconds = Math.round((Date.now() - this.serverStartTime) / 1000);
+
+    let status: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';
+    let indexLoaded = false;
+    let indexAge: string | null = null;
+    let fileCount = 0;
+    let symbolCount = 0;
+
+    try {
+      const index = await this.indexer.index();
+      indexLoaded = true;
+      fileCount = index.stats?.totalFiles || 0;
+      symbolCount = index.stats?.totalSymbols || 0;
+      indexAge = index.updatedAt || index.createdAt || null;
+
+      // Check if index is stale (older than 1 hour)
+      if (indexAge) {
+        const ageMs = Date.now() - new Date(indexAge).getTime();
+        if (ageMs > 3600000) {
+          status = 'degraded';
+        }
+      }
+    } catch {
+      status = 'unhealthy';
+      indexLoaded = false;
+    }
+
+    return {
+      status,
+      uptime: uptimeSeconds,
+      indexLoaded,
+      indexAge,
+      queryCount: this.queryCount,
+      memoryUsage: memoryMB,
+      fileCount,
+      symbolCount,
+    };
   }
 
   /**

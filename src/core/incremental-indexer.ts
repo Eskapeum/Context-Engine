@@ -1,5 +1,5 @@
 /**
- * Universal Context Memory - Incremental Indexer
+ * Universal Context Engine - Incremental Indexer
  *
  * High-performance indexer with:
  * - Incremental updates via file hash tracking
@@ -92,7 +92,7 @@ export interface GitBranchInfo {
  * Complete project index
  */
 export interface ProjectIndex {
-  /** UCM version */
+  /** UCE version */
   version: string;
   /** Project name */
   name: string;

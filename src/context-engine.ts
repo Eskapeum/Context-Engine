@@ -1,5 +1,5 @@
 /**
- * Universal Context Memory - Context Engine
+ * Universal Context Engine - Context Engine
  *
  * The main context engine that orchestrates:
  * - Incremental indexing
@@ -574,7 +574,7 @@ export class ContextEngine {
    * Save indices to disk for faster startup
    */
   async saveIndices(): Promise<void> {
-    const cacheDir = path.join(this.config.projectRoot, '.ucm', 'cache');
+    const cacheDir = path.join(this.config.projectRoot, '.uce', 'cache');
     await fs.promises.mkdir(cacheDir, { recursive: true });
 
     // Save BM25 index
@@ -594,7 +594,7 @@ export class ContextEngine {
    * Load indices from disk
    */
   async loadIndices(): Promise<boolean> {
-    const cacheDir = path.join(this.config.projectRoot, '.ucm', 'cache');
+    const cacheDir = path.join(this.config.projectRoot, '.uce', 'cache');
 
     try {
       // Load BM25 index
@@ -621,7 +621,7 @@ export class ContextEngine {
    * Clear cached indices
    */
   async clearCache(): Promise<void> {
-    const cacheDir = path.join(this.config.projectRoot, '.ucm', 'cache');
+    const cacheDir = path.join(this.config.projectRoot, '.uce', 'cache');
     if (fs.existsSync(cacheDir)) {
       await fs.promises.rm(cacheDir, { recursive: true });
     }

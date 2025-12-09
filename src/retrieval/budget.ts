@@ -1,5 +1,5 @@
 /**
- * Universal Context Memory - Context Budget Optimization
+ * Universal Context Engine - Context Budget Optimization
  *
  * Intelligently selects and ranks context chunks to fit within
  * a token budget while maximizing relevance and coverage.

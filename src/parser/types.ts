@@ -1,5 +1,5 @@
 /**
- * Universal Context Memory - Parser Types
+ * Universal Context Engine - Parser Types
  *
  * Core types for AST-based parsing and semantic analysis.
  *

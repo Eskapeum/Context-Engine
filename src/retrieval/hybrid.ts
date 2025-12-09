@@ -1,5 +1,5 @@
 /**
- * Universal Context Memory - Hybrid Retrieval
+ * Universal Context Engine - Hybrid Retrieval
  *
  * Combines sparse (BM25) and dense (vector) retrieval using
  * Reciprocal Rank Fusion (RRF) for optimal results.

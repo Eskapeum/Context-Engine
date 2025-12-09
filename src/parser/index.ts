@@ -1,5 +1,5 @@
 /**
- * Universal Context Memory - Parser Module
+ * Universal Context Engine - Parser Module
  *
  * Exports all parser types and utilities.
  *

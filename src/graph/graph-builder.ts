@@ -1,5 +1,5 @@
 /**
- * Universal Context Memory - Graph Builder
+ * Universal Context Engine - Graph Builder
  *
  * Builds a knowledge graph from parsed code files.
  * Extracts symbols, relationships, and call graphs.

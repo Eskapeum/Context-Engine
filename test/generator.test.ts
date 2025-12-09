@@ -146,8 +146,8 @@ export class UserAPI {
       const md = generateClaudeMd(config);
 
       expect(md).toContain('Claude Code Context');
-      expect(md).toContain('UCM');
-      expect(md).toContain('ucm');
+      expect(md).toContain('UCE');
+      expect(md).toContain('uce');
     });
   });
 

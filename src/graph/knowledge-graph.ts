@@ -1,5 +1,5 @@
 /**
- * Universal Context Memory - Knowledge Graph
+ * Universal Context Engine - Knowledge Graph
  *
  * Builds and queries a knowledge graph of code entities and their relationships.
  * Supports symbol references, inheritance, composition, and call relationships.

@@ -281,7 +281,7 @@ export function multiply(a: number, b: number): number {
     await engine.saveIndices();
 
     // Check cache exists
-    const cacheDir = path.join(testDir, '.ucm', 'cache');
+    const cacheDir = path.join(testDir, '.uce', 'cache');
     expect(fs.existsSync(path.join(cacheDir, 'bm25.json'))).toBe(true);
     expect(fs.existsSync(path.join(cacheDir, 'graph.json'))).toBe(true);
 

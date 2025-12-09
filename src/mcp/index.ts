@@ -1,5 +1,5 @@
 /**
- * Universal Context Memory - MCP Module
+ * Universal Context Engine - MCP Module
  *
  * @module mcp
  */

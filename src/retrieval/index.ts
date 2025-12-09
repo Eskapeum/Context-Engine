@@ -1,5 +1,5 @@
 /**
- * Universal Context Memory - Retrieval Module
+ * Universal Context Engine - Retrieval Module
  *
  * Exports for sparse, dense, and hybrid retrieval.
  *

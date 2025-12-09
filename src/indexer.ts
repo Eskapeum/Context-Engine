@@ -1,5 +1,5 @@
 /**
- * Universal Context Memory - Indexer
+ * Universal Context Engine - Indexer
  *
  * Indexes codebases to extract symbols, dependencies, and structure.
  * Supports 10+ programming languages with pattern-based extraction.
@@ -95,8 +95,8 @@ export interface FileIndex {
  * Complete project index
  */
 export interface ProjectIndex {
-  /** UCM version that created this index */
-  ucmVersion: string;
+  /** UCE version that created this index */
+  uceVersion: string;
   /** Project name (from package.json or directory) */
   projectName: string;
   /** Project root directory */
@@ -446,7 +446,7 @@ export class Indexer {
     const totalSymbols = Object.values(fileIndexes).reduce((sum, f) => sum + f.symbols.length, 0);
 
     return {
-      ucmVersion: '1.0.0',
+      uceVersion: '1.0.0',
       projectName,
       projectRoot: this.config.projectRoot,
       indexedAt: new Date().toISOString(),

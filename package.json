@@ -1,37 +1,40 @@
 {
-  "name": "universal-context-memory",
-  "version": "2.1.0",
-  "description": "Auto-indexing memory for AI coding assistants - baked into your project",
+  "name": "universal-context-engine",
+  "version": "1.0.0",
+  "description": "Live context intelligence for AI coding assistants - your codebase in context",
   "author": "Tobi Daniel Adelaja <tobi@lyceumacademy.ai>",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Eskapeum/Context-Memory.git"
+    "url": "git+https://github.com/Eskapeum/Context-Engine.git"
   },
   "bugs": {
-    "url": "https://github.com/Eskapeum/Context-Memory/issues"
+    "url": "https://github.com/Eskapeum/Context-Engine/issues"
   },
-  "homepage": "https://github.com/Eskapeum/Context-Memory#readme",
+  "homepage": "https://github.com/Eskapeum/Context-Engine#readme",
   "keywords": [
     "ai",
     "context",
-    "memory",
+    "engine",
+    "uce",
     "claude",
     "cursor",
     "copilot",
-    "codex",
+    "mcp",
     "llm",
     "indexing",
     "codebase",
     "context-engineering",
     "ai-assistant",
-    "developer-tools"
+    "developer-tools",
+    "tree-sitter",
+    "code-search"
   ],
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "ucm": "dist/cli.js"
+    "uce": "dist/cli.js"
   },
   "exports": {
     ".": {

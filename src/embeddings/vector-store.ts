@@ -1,5 +1,5 @@
 /**
- * Universal Context Memory - Vector Store
+ * Universal Context Engine - Vector Store
  *
  * Implements vector storage and similarity search.
  * Supports in-memory and Qdrant backends.
@@ -152,7 +152,7 @@ export class QdrantVectorStore implements VectorStore {
 
   constructor(config: VectorStoreConfig) {
     this.url = config.url || 'http://localhost:6333';
-    this.collection = config.collection || 'ucm-chunks';
+    this.collection = config.collection || 'uce-chunks';
   }
 
   async initialize(): Promise<void> {
@@ -351,7 +351,7 @@ export function createAutoVectorStore(projectRoot: string): VectorStore {
   if (process.env.QDRANT_URL) {
     return new QdrantVectorStore({
       type: 'qdrant',
-      collection: 'ucm-chunks',
+      collection: 'uce-chunks',
       url: process.env.QDRANT_URL,
     });
   }
@@ -359,7 +359,7 @@ export function createAutoVectorStore(projectRoot: string): VectorStore {
   // Fall back to persistent memory store
   return new MemoryVectorStore({
     type: 'memory',
-    collection: 'ucm-chunks',
+    collection: 'uce-chunks',
     path: path.join(projectRoot, '.context', 'vectors.json'),
   });
 }

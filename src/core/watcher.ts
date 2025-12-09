@@ -1,5 +1,5 @@
 /**
- * Universal Context Memory - File Watcher
+ * Universal Context Engine - File Watcher
  *
  * Watches for file system changes and triggers incremental re-indexing
  * with dependency cascade invalidation.
@@ -73,7 +73,7 @@ export class FileWatcher extends EventEmitter {
     super();
     this.indexer = indexer;
     this.config = {
-      ignore: config?.ignore ?? ['node_modules', '.git', 'dist', 'build', '.ucm'],
+      ignore: config?.ignore ?? ['node_modules', '.git', 'dist', 'build', '.uce'],
       debounceMs: config?.debounceMs ?? 300,
       initialIndex: config?.initialIndex ?? true,
     };

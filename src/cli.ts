@@ -1,5 +1,5 @@
 /**
- * Universal Context Memory - CLI
+ * Universal Context Engine - CLI
  *
  * Command-line interface for UCM.
  * Provides commands for indexing, watching, querying, and managing context files.
@@ -22,8 +22,8 @@ const VERSION = '1.0.0';
 const program = new Command();
 
 program
-  .name('ucm')
-  .description('Universal Context Memory - Auto-indexing memory for AI coding assistants')
+  .name('uce')
+  .description('Universal Context Engine - Auto-indexing memory for AI coding assistants')
   .version(VERSION);
 
 // ============================================================================
@@ -32,13 +32,13 @@ program
 
 program
   .command('init')
-  .description('Initialize UCM in the current project')
+  .description('Initialize UCE in the current project')
   .option('-s, --silent', 'Suppress output')
   .action(async (options) => {
     const projectRoot = process.cwd();
 
     if (!options.silent) {
-      console.log('🚀 Initializing Universal Context Memory...\n');
+      console.log('🚀 Initializing Universal Context Engine...\n');
     }
 
     // Create .contextignore if it doesn't exist
@@ -164,7 +164,7 @@ program
         '**/dist/**',
         '**/build/**',
         '**/.context/**',
-        '**/.ucm/**',
+        '**/.uce/**',
         '**/CONTEXT.md',
         '**/CLAUDE.md',
         '**/.cursorrules',
@@ -228,7 +228,7 @@ program
     const index = indexer.loadIndex();
 
     if (!index) {
-      console.log('❌ No index found. Run `ucm index` first.');
+      console.log('❌ No index found. Run `uce index` first.');
       process.exit(1);
     }
 
@@ -258,7 +258,7 @@ program
     }
 
     console.log(`\n🕐 Indexed at: ${index.indexedAt}`);
-    console.log(`📦 UCM version: ${index.ucmVersion}`);
+    console.log(`📦 UCE version: ${index.uceVersion}`);
   });
 
 // ============================================================================
@@ -275,7 +275,7 @@ program
     const index = indexer.loadIndex();
 
     if (!index) {
-      console.log('❌ No index found. Run `ucm index` first.');
+      console.log('❌ No index found. Run `uce index` first.');
       process.exit(1);
     }
 
@@ -334,7 +334,7 @@ program
     const index = indexer.loadIndex();
 
     if (!index) {
-      console.log('❌ No index found. Run `ucm index` first.');
+      console.log('❌ No index found. Run `uce index` first.');
       process.exit(1);
     }
 
@@ -391,7 +391,7 @@ program
     const oldIndex = indexer.loadIndex();
 
     if (!oldIndex) {
-      console.log('❌ No previous index found. Run `ucm index` first.');
+      console.log('❌ No previous index found. Run `uce index` first.');
       process.exit(1);
     }
 
@@ -465,7 +465,7 @@ program
     const index = indexer.loadIndex();
 
     if (!index) {
-      console.log('❌ No index found. Run `ucm index` first.');
+      console.log('❌ No index found. Run `uce index` first.');
       process.exit(1);
     }
 
@@ -533,7 +533,7 @@ program
     const index = indexer.loadIndex();
 
     if (!index) {
-      console.log('❌ No index found. Run `ucm index` first.');
+      console.log('❌ No index found. Run `uce index` first.');
       process.exit(1);
     }
 
@@ -698,7 +698,7 @@ program
     const index = indexer.loadIndex();
 
     if (!index) {
-      console.log('❌ No index found. Run `ucm index` first.');
+      console.log('❌ No index found. Run `uce index` first.');
       process.exit(1);
     }
 
@@ -746,7 +746,7 @@ program
     const index = indexer.loadIndex();
 
     if (!index) {
-      console.log('❌ No index found. Run `ucm index` first.');
+      console.log('❌ No index found. Run `uce index` first.');
       process.exit(1);
     }
 
@@ -784,7 +784,7 @@ program
     const index = indexer.loadIndex();
 
     if (!index) {
-      console.log('❌ No index found. Run `ucm index` first.');
+      console.log('❌ No index found. Run `uce index` first.');
       process.exit(1);
     }
 
@@ -822,17 +822,17 @@ program
 
 program
   .command('serve')
-  .description('Start the UCM MCP server for Claude Code integration')
+  .description('Start the UCE MCP server for Claude Code integration')
   .option('-p, --path <path>', 'Project path', process.cwd())
   .option('-w, --watch', 'Enable file watching')
   .action(async (options) => {
     const projectRoot = path.resolve(options.path);
     const config = await loadConfig(projectRoot);
 
-    console.error(`🚀 Starting UCM MCP Server for ${projectRoot}...`);
+    console.error(`🚀 Starting UCE MCP Server for ${projectRoot}...`);
 
     // Dynamically import the server to avoid circular deps
-    const { UCMServer } = await import('./mcp/server.js');
+    const { UCEServer } = await import('./mcp/server.js');
 
     const indexer = new Indexer({ projectRoot });
     let index = indexer.loadIndex();
@@ -848,7 +848,7 @@ program
       index,
       enableEmbeddings: config.enableEmbeddings,
     });
-    const server = new UCMServer(projectRoot, engine);
+    const server = new UCEServer(projectRoot, engine);
 
     if (options.watch || config.mcp?.watchMode) {
       server.startWatch();
@@ -867,7 +867,7 @@ program
 
 program
   .command('config')
-  .description('Generate or show UCM configuration')
+  .description('Generate or show UCE configuration')
   .option('-p, --path <path>', 'Project path', process.cwd())
   .option('-i, --init', 'Generate a new config file')
   .option('-f, --format <format>', 'Config format: json or js', 'json')
@@ -879,7 +879,7 @@ program
     if (options.init) {
       // Generate new config file
       const format = options.format as 'json' | 'js';
-      const filename = format === 'json' ? '.ucmrc.json' : 'ucm.config.js';
+      const filename = format === 'json' ? '.ucerc.json' : 'uce.config.js';
       const configPath = path.join(projectRoot, filename);
 
       if (fs.existsSync(configPath)) {
@@ -891,7 +891,7 @@ program
       const content = generateDefaultConfig(format);
       fs.writeFileSync(configPath, content);
       console.log(`✅ Created ${filename}`);
-      console.log('\nEdit this file to customize UCM behavior.');
+      console.log('\nEdit this file to customize UCE behavior.');
       return;
     }
 
@@ -914,7 +914,7 @@ program
 
     // Show current config (default action)
     const config = await loadConfig(projectRoot);
-    console.log('📋 Current UCM Configuration:\n');
+    console.log('📋 Current UCE Configuration:\n');
     console.log(JSON.stringify(config, null, 2));
   });
 
@@ -1012,7 +1012,7 @@ program
     // Prompt to index
     const proceed = await ask('Ready to index your codebase? [Y/n] ');
     if (proceed && proceed !== 'y' && proceed !== '') {
-      console.log('\nNo problem! Run `ucm hello` when you\'re ready.\n');
+      console.log('\nNo problem! Run `uce hello` when you\'re ready.\n');
       return;
     }
 
@@ -1035,10 +1035,10 @@ program
     console.log('\n✅ Done! Your codebase is indexed.\n');
 
     console.log('Try these commands:');
-    console.log('  ucm query "authentication logic"   # Search your code');
-    console.log('  ucm status                         # View index status');
-    console.log('  ucm watch                          # Auto-update on changes');
-    console.log('  ucm serve                          # Start MCP server for AI tools');
+    console.log('  uce query "authentication logic"   # Search your code');
+    console.log('  uce status                         # View index status');
+    console.log('  uce watch                          # Auto-update on changes');
+    console.log('  uce serve                          # Start MCP server for AI tools');
 
     console.log('\n📚 Learn more: https://github.com/Eskapeum/Context-Engine\n');
   });
@@ -1049,7 +1049,7 @@ program
 
 program
   .command('info')
-  .description('Show UCM version and system information')
+  .description('Show UCE version and system information')
   .action(async () => {
     console.log(`\n📦 Universal Context Engine (UCE) v${VERSION}\n`);
     console.log('System Information:');

@@ -45,8 +45,8 @@ export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];
  * User-friendly solutions for each error code
  */
 const errorSolutions: Record<ErrorCode, string> = {
-  INDEX_NOT_FOUND: 'Run `ucm index` to create the index.',
-  INDEX_CORRUPTED: 'Run `ucm index --rebuild` to rebuild the index.',
+  INDEX_NOT_FOUND: 'Run `uce index` to create the index.',
+  INDEX_CORRUPTED: 'Run `uce index --rebuild` to rebuild the index.',
   PARSE_FAILED:
     'Check the file for syntax errors. UCE will use tokenization fallback.',
   UNSUPPORTED_LANGUAGE:
@@ -54,7 +54,7 @@ const errorSolutions: Record<ErrorCode, string> = {
   FILE_NOT_FOUND: 'Verify the file path exists and is accessible.',
   PERMISSION_DENIED:
     'Check file permissions or add to .gitignore to exclude.',
-  QUERY_EMPTY: 'Provide a search query. Example: ucm query "auth logic"',
+  QUERY_EMPTY: 'Provide a search query. Example: uce query "auth logic"',
   LOW_CONFIDENCE:
     'Try a more specific query or check if the code exists in your project.',
   TIMEOUT: 'The operation took too long. Try with a smaller scope.',

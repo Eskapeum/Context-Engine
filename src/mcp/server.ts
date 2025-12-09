@@ -1,5 +1,5 @@
 /**
- * Universal Context Memory - MCP Server
+ * Universal Context Engine - MCP Server
  *
  * Model Context Protocol server for AI coding assistant integration.
  * Exposes context engine capabilities via MCP tools.
@@ -60,7 +60,7 @@ interface MCPResource {
 // ============================================================================
 
 /**
- * MCP Server for Universal Context Memory
+ * MCP Server for Universal Context Engine
  */
 export class MCPServer {
   private indexer: IncrementalIndexer;
@@ -130,7 +130,7 @@ export class MCPServer {
   getTools(): MCPTool[] {
     return [
       {
-        name: 'ucm_search',
+        name: 'uce_search',
         description:
           'Search for code symbols (functions, classes, types) in the codebase. Returns matching symbols with file locations.',
         inputSchema: {
@@ -155,7 +155,7 @@ export class MCPServer {
         },
       },
       {
-        name: 'ucm_get_context',
+        name: 'uce_get_context',
         description:
           'Get relevant code context for a task or question. Returns semantically chunked code that is most relevant.',
         inputSchema: {
@@ -179,7 +179,7 @@ export class MCPServer {
         },
       },
       {
-        name: 'ucm_find_usages',
+        name: 'uce_find_usages',
         description: 'Find all usages of a symbol across the codebase. Shows where functions/classes are called or referenced.',
         inputSchema: {
           type: 'object',
@@ -197,7 +197,7 @@ export class MCPServer {
         },
       },
       {
-        name: 'ucm_get_dependencies',
+        name: 'uce_get_dependencies',
         description: 'Get dependency information for a file. Shows what the file imports and what imports it.',
         inputSchema: {
           type: 'object',
@@ -216,7 +216,7 @@ export class MCPServer {
         },
       },
       {
-        name: 'ucm_get_file_symbols',
+        name: 'uce_get_file_symbols',
         description: 'Get all symbols defined in a specific file with their signatures and documentation.',
         inputSchema: {
           type: 'object',
@@ -234,7 +234,7 @@ export class MCPServer {
         },
       },
       {
-        name: 'ucm_get_project_structure',
+        name: 'uce_get_project_structure',
         description: 'Get an overview of the project structure including key files, entry points, and statistics.',
         inputSchema: {
           type: 'object',
@@ -247,7 +247,7 @@ export class MCPServer {
         },
       },
       {
-        name: 'ucm_refresh_index',
+        name: 'uce_refresh_index',
         description: 'Refresh the code index to pick up recent changes. Usually happens automatically.',
         inputSchema: {
           type: 'object',
@@ -261,7 +261,7 @@ export class MCPServer {
         },
       },
       {
-        name: 'ucm_find_related',
+        name: 'uce_find_related',
         description: 'Find related symbols through inheritance, calls, and references. Useful for understanding impact of changes.',
         inputSchema: {
           type: 'object',
@@ -284,7 +284,7 @@ export class MCPServer {
         },
       },
       {
-        name: 'ucm_get_callers',
+        name: 'uce_get_callers',
         description: 'Find all functions/methods that call a given function. Useful for refactoring.',
         inputSchema: {
           type: 'object',
@@ -298,7 +298,7 @@ export class MCPServer {
         },
       },
       {
-        name: 'ucm_get_inheritance',
+        name: 'uce_get_inheritance',
         description: 'Get inheritance hierarchy for a class or interface. Shows parent classes and child classes.',
         inputSchema: {
           type: 'object',
@@ -317,7 +317,7 @@ export class MCPServer {
         },
       },
       {
-        name: 'ucm_hybrid_search',
+        name: 'uce_hybrid_search',
         description: 'Advanced search combining keyword and semantic matching. Better for natural language queries.',
         inputSchema: {
           type: 'object',
@@ -340,7 +340,7 @@ export class MCPServer {
         },
       },
       {
-        name: 'ucm_watch_start',
+        name: 'uce_watch_start',
         description: 'Start watching for file changes. Auto-updates the index when files change.',
         inputSchema: {
           type: 'object',
@@ -354,7 +354,7 @@ export class MCPServer {
         },
       },
       {
-        name: 'ucm_watch_stop',
+        name: 'uce_watch_stop',
         description: 'Stop watching for file changes.',
         inputSchema: {
           type: 'object',
@@ -362,7 +362,7 @@ export class MCPServer {
         },
       },
       {
-        name: 'ucm_watch_status',
+        name: 'uce_watch_status',
         description: 'Get current watch mode status and statistics.',
         inputSchema: {
           type: 'object',
@@ -370,7 +370,7 @@ export class MCPServer {
         },
       },
       {
-        name: 'ucm_export_graph',
+        name: 'uce_export_graph',
         description: 'Export knowledge graph in various formats for visualization.',
         inputSchema: {
           type: 'object',
@@ -392,7 +392,7 @@ export class MCPServer {
         },
       },
       {
-        name: 'ucm_graph_stats',
+        name: 'uce_graph_stats',
         description: 'Get statistics about the knowledge graph.',
         inputSchema: {
           type: 'object',
@@ -400,7 +400,7 @@ export class MCPServer {
         },
       },
       {
-        name: 'ucm_health',
+        name: 'uce_health',
         description: 'Check server health status and get system information. Returns status (healthy/degraded/unhealthy), uptime, index stats, and memory usage.',
         inputSchema: {
           type: 'object',
@@ -416,13 +416,13 @@ export class MCPServer {
   getResources(): MCPResource[] {
     return [
       {
-        uri: `ucm://${this.projectRoot}/index`,
+        uri: `uce://${this.projectRoot}/index`,
         name: 'Project Index',
         description: 'Complete project index with all symbols and dependencies',
         mimeType: 'application/json',
       },
       {
-        uri: `ucm://${this.projectRoot}/stats`,
+        uri: `uce://${this.projectRoot}/stats`,
         name: 'Index Statistics',
         description: 'Statistics about the indexed codebase',
         mimeType: 'application/json',
@@ -438,55 +438,55 @@ export class MCPServer {
     await this.indexer.initialize();
 
     switch (name) {
-      case 'ucm_search':
+      case 'uce_search':
         return this.handleSearch(args);
 
-      case 'ucm_get_context':
+      case 'uce_get_context':
         return this.handleGetContext(args);
 
-      case 'ucm_find_usages':
+      case 'uce_find_usages':
         return this.handleFindUsages(args);
 
-      case 'ucm_get_dependencies':
+      case 'uce_get_dependencies':
         return this.handleGetDependencies(args);
 
-      case 'ucm_get_file_symbols':
+      case 'uce_get_file_symbols':
         return this.handleGetFileSymbols(args);
 
-      case 'ucm_get_project_structure':
+      case 'uce_get_project_structure':
         return this.handleGetProjectStructure(args);
 
-      case 'ucm_refresh_index':
+      case 'uce_refresh_index':
         return this.handleRefreshIndex(args);
 
-      case 'ucm_find_related':
+      case 'uce_find_related':
         return this.handleFindRelated(args);
 
-      case 'ucm_get_callers':
+      case 'uce_get_callers':
         return this.handleGetCallers(args);
 
-      case 'ucm_get_inheritance':
+      case 'uce_get_inheritance':
         return this.handleGetInheritance(args);
 
-      case 'ucm_hybrid_search':
+      case 'uce_hybrid_search':
         return this.handleHybridSearch(args);
 
-      case 'ucm_watch_start':
+      case 'uce_watch_start':
         return this.handleWatchStart(args);
 
-      case 'ucm_watch_stop':
+      case 'uce_watch_stop':
         return this.handleWatchStop();
 
-      case 'ucm_watch_status':
+      case 'uce_watch_status':
         return this.handleWatchStatus();
 
-      case 'ucm_export_graph':
+      case 'uce_export_graph':
         return this.handleExportGraph(args);
 
-      case 'ucm_graph_stats':
+      case 'uce_graph_stats':
         return this.handleGraphStats();
 
-      case 'ucm_health':
+      case 'uce_health':
         return this.handleHealth();
 
       default:
@@ -1048,7 +1048,7 @@ export class MCPServer {
 
     // Create new watcher
     this.watcher = new FileWatcher(this.indexer, {
-      ignore: ignore || ['node_modules', '.git', 'dist', 'build', '.ucm'],
+      ignore: ignore || ['node_modules', '.git', 'dist', 'build', '.uce'],
       debounceMs: 300,
       initialIndex: false, // Already indexed
     });
@@ -1304,7 +1304,7 @@ export class MCPServer {
                 resources: {},
               },
               serverInfo: {
-                name: 'ucm-context-engine',
+                name: 'uce-context-engine',
                 version: '2.0.0',
               },
             },
@@ -1407,7 +1407,7 @@ export class MCPServer {
       });
 
       this.server.listen(port, () => {
-        console.log(`UCM MCP Server running on http://localhost:${port}`);
+        console.log(`UCE MCP Server running on http://localhost:${port}`);
         resolve();
       });
     });

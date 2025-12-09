@@ -1,5 +1,5 @@
 /**
- * Universal Context Memory - Tree-sitter Parser
+ * Universal Context Engine - Tree-sitter Parser
  *
  * AST-based parsing using tree-sitter for accurate symbol extraction.
  * Falls back to regex for unsupported languages.

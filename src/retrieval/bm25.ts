@@ -1,5 +1,5 @@
 /**
- * Universal Context Memory - BM25 Sparse Retrieval
+ * Universal Context Engine - BM25 Sparse Retrieval
  *
  * Implements BM25 (Best Matching 25) algorithm for sparse text retrieval.
  * Used in combination with dense vector search for hybrid retrieval.

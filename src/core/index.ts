@@ -1,5 +1,5 @@
 /**
- * Universal Context Memory - Core Module
+ * Universal Context Engine - Core Module
  *
  * @module core
  */

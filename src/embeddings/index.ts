@@ -1,5 +1,5 @@
 /**
- * Universal Context Memory - Embeddings Module
+ * Universal Context Engine - Embeddings Module
  *
  * @module embeddings
  */

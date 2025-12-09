@@ -222,7 +222,7 @@ export class JsonIndexStore implements IndexStore {
         {
           userMessage:
             `This index was created with a newer version of UCE. ` +
-            `Please upgrade UCE or rebuild the index with \`ucm index --rebuild\`.`,
+            `Please upgrade UCE or rebuild the index with \`uce index --rebuild\`.`,
         }
       );
     }

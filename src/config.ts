@@ -1,11 +1,11 @@
 /**
- * Universal Context Memory - Configuration
+ * Universal Context Engine - Configuration
  *
- * Loads and validates UCM configuration from various sources:
- * - .ucmrc.json
- * - ucm.config.js
- * - ucm.config.mjs
- * - package.json "ucm" field
+ * Loads and validates UCE configuration from various sources:
+ * - .ucerc.json
+ * - uce.config.js
+ * - uce.config.mjs
+ * - package.json "uce" field
  *
  * @module config
  */
@@ -19,7 +19,7 @@ import { pathToFileURL } from 'url';
 // ============================================================================
 
 /**
- * UCM configuration schema
+ * UCE configuration schema
  */
 export interface UCMConfig {
   /** Project name override */
@@ -48,7 +48,7 @@ export interface UCMConfig {
   /** Output configuration */
   output?: {
     /** Generate UCM.md (universal context file) */
-    ucmMd?: boolean;
+    uceMd?: boolean;
     /** Generate CONTEXT.md */
     contextMd?: boolean;
     /** Generate CLAUDE.md */
@@ -115,7 +115,7 @@ export const DEFAULT_CONFIG: Required<UCMConfig> = {
     dimensions: 384,
   },
   output: {
-    ucmMd: true,
+    uceMd: true,
     contextMd: true,
     claudeMd: true,
     cursorRules: true,
@@ -151,15 +151,15 @@ export const DEFAULT_CONFIG: Required<UCMConfig> = {
  * Configuration file names to search for (in order of priority)
  */
 const CONFIG_FILES = [
-  '.ucmrc.json',
-  '.ucmrc',
-  'ucm.config.js',
-  'ucm.config.mjs',
-  'ucm.config.cjs',
+  '.ucerc.json',
+  '.ucerc',
+  'uce.config.js',
+  'uce.config.mjs',
+  'uce.config.cjs',
 ];
 
 /**
- * Load UCM configuration from project root
+ * Load UCE configuration from project root
  *
  * @param projectRoot - Project root directory
  * @returns Merged configuration with defaults
@@ -181,13 +181,13 @@ export async function loadConfig(projectRoot: string): Promise<UCMConfig> {
     }
   }
 
-  // Try package.json "ucm" field
+  // Try package.json "uce" field
   const packageJsonPath = path.join(resolvedRoot, 'package.json');
   if (fs.existsSync(packageJsonPath)) {
     try {
       const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
-      if (packageJson.ucm) {
-        return mergeConfig(packageJson.ucm);
+      if (packageJson.uce) {
+        return mergeConfig(packageJson.uce);
       }
     } catch {
       // Ignore package.json errors
@@ -204,7 +204,7 @@ export async function loadConfig(projectRoot: string): Promise<UCMConfig> {
 async function loadConfigFile(configPath: string): Promise<UCMConfig> {
   const ext = path.extname(configPath);
 
-  if (ext === '.json' || configPath.endsWith('.ucmrc')) {
+  if (ext === '.json' || configPath.endsWith('.ucerc')) {
     // JSON config
     const content = fs.readFileSync(configPath, 'utf-8');
     return JSON.parse(content);
@@ -300,7 +300,7 @@ export function generateDefaultConfig(format: 'json' | 'js' = 'json'): string {
         maxTokens: 50000,
         enableEmbeddings: false,
         output: {
-          ucmMd: true,
+          uceMd: true,
           contextMd: true,
           claudeMd: true,
           cursorRules: true,
@@ -320,7 +320,7 @@ export function generateDefaultConfig(format: 'json' | 'js' = 'json'): string {
   }
 
   return `/**
- * UCM Configuration
+ * UCE Configuration
  * @type {import('universal-context-memory').UCMConfig}
  */
 export default {
@@ -348,7 +348,7 @@ export default {
 
   // Output configuration
   output: {
-    ucmMd: true,
+    uceMd: true,
     contextMd: true,
     claudeMd: true,
     cursorRules: true,

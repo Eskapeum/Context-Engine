@@ -1,5 +1,5 @@
 /**
- * Universal Context Memory - Embedding Types
+ * Universal Context Engine - Embedding Types
  *
  * @module embeddings/types
  */

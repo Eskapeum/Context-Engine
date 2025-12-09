@@ -1,5 +1,5 @@
 /**
- * Universal Context Memory (UCM) v2.0
+ * Universal Context Engine (UCM) v2.0
  *
  * The most intelligent context engine for AI coding assistants.
  *
@@ -51,7 +51,7 @@ export {
 
 export {
   ContextGenerator,
-  generateUcmMd,
+  generateUceMd,
   generateContextMd,
   generateClaudeMd,
   generateCursorRules,
@@ -244,7 +244,7 @@ export async function startMCPServer(
 }
 
 /**
- * Version of the UCM package.
+ * Version of the UCE package.
  */
 export const VERSION = '2.0.0';
 

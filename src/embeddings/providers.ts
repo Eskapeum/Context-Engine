@@ -1,5 +1,5 @@
 /**
- * Universal Context Memory - Embedding Providers
+ * Universal Context Engine - Embedding Providers
  *
  * Supports multiple embedding providers:
  * - Voyage Code-3 (best for code)

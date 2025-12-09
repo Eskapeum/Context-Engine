@@ -1,5 +1,5 @@
 /**
- * Universal Context Memory - Graph Module
+ * Universal Context Engine - Graph Module
  *
  * Knowledge graph for code entity relationships.
  *

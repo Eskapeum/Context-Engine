@@ -17,7 +17,7 @@ import { loadConfig, validateConfig, generateDefaultConfig, type UCMConfig } fro
 import * as fs from 'fs';
 import * as path from 'path';
 
-const VERSION = '2.1.0';
+const VERSION = '2.2.0';
 
 const program = new Command();
 
@@ -129,13 +129,8 @@ program
 
 program
   .command('generate')
-  .description('Generate context files from existing index')
+  .description('Regenerate UCE.md from existing index')
   .option('-p, --path <path>', 'Project path', process.cwd())
-  .option('--all', 'Generate all tool-specific files (CLAUDE.md, .cursorrules, etc.)')
-  .option('--claude', 'Generate CLAUDE.md for Claude Code')
-  .option('--cursor', 'Generate .cursorrules for Cursor IDE')
-  .option('--copilot', 'Generate .github/copilot-instructions.md for GitHub Copilot')
-  .option('--context', 'Generate CONTEXT.md (generic format)')
   .action(async (options) => {
     const projectRoot = path.resolve(options.path);
 
@@ -148,23 +143,9 @@ program
     }
 
     const generator = new ContextGenerator({ projectRoot, index });
-    generator.generateAll({
-      all: options.all,
-      claude: options.claude,
-      cursor: options.cursor,
-      copilot: options.copilot,
-      context: options.context,
-    });
+    generator.generateAll();
 
     console.log('✅ Generated UCE.md');
-    if (options.all) {
-      console.log('   + CLAUDE.md, CONTEXT.md, .cursorrules, .github/copilot-instructions.md');
-    } else {
-      if (options.claude) console.log('   + CLAUDE.md');
-      if (options.context) console.log('   + CONTEXT.md');
-      if (options.cursor) console.log('   + .cursorrules');
-      if (options.copilot) console.log('   + .github/copilot-instructions.md');
-    }
   });
 
 // ============================================================================
@@ -396,12 +377,7 @@ program
 
     const filesToRemove = [
       '.uce',
-      '.context',
       'UCE.md',
-      'CONTEXT.md',
-      'CLAUDE.md',
-      '.cursorrules',
-      '.github/copilot-instructions.md',
     ];
 
     for (const file of filesToRemove) {

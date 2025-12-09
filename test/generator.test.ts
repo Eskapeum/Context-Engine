@@ -4,13 +4,7 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { Indexer } from '../src/indexer';
-import {
-  ContextGenerator,
-  generateContextMd,
-  generateClaudeMd,
-  generateCursorRules,
-  generateCopilotInstructions,
-} from '../src/generator';
+import { ContextGenerator, generateUceMd } from '../src/generator';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
@@ -21,7 +15,7 @@ describe('ContextGenerator', () => {
 
   beforeEach(async () => {
     // Create a temporary test directory with some files
-    testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ucm-gen-test-'));
+    testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'uce-gen-test-'));
 
     const srcDir = path.join(testDir, 'src');
     fs.mkdirSync(srcDir);
@@ -78,7 +72,7 @@ export class UserAPI {
     fs.rmSync(testDir, { recursive: true, force: true });
   });
 
-  describe('generateContextMd', () => {
+  describe('generateUceMd', () => {
     it('should generate valid markdown', async () => {
       const index = await indexer.index();
       const config = {
@@ -89,13 +83,13 @@ export class UserAPI {
         priorityFiles: [],
       };
 
-      const md = generateContextMd(config);
+      const md = generateUceMd(config);
 
       expect(md).toContain('# ');
-      expect(md).toContain('Project Context');
+      expect(md).toContain('Universal Context');
       expect(md).toContain('Files');
       expect(md).toContain('Symbols');
-      expect(md).toContain('UCM');
+      expect(md).toContain('UCE');
     });
 
     it('should include file tree', async () => {
@@ -108,7 +102,7 @@ export class UserAPI {
         priorityFiles: [],
       };
 
-      const md = generateContextMd(config);
+      const md = generateUceMd(config);
 
       expect(md).toContain('src/');
       expect(md).toContain('auth.ts');
@@ -125,15 +119,13 @@ export class UserAPI {
         priorityFiles: [],
       };
 
-      const md = generateContextMd(config);
+      const md = generateUceMd(config);
 
       expect(md).toContain('AuthService');
       expect(md).toContain('User');
     });
-  });
 
-  describe('generateClaudeMd', () => {
-    it('should generate Claude-specific context', async () => {
+    it('should include public API section', async () => {
       const index = await indexer.index();
       const config = {
         projectRoot: testDir,
@@ -143,16 +135,14 @@ export class UserAPI {
         priorityFiles: [],
       };
 
-      const md = generateClaudeMd(config);
+      const md = generateUceMd(config);
 
-      expect(md).toContain('Claude Code Context');
-      expect(md).toContain('UCE');
-      expect(md).toContain('uce');
+      expect(md).toContain('Public API');
+      expect(md).toContain('Classes');
+      expect(md).toContain('Interfaces');
     });
-  });
 
-  describe('generateCursorRules', () => {
-    it('should generate Cursor rules format', async () => {
+    it('should include development guidelines', async () => {
       const index = await indexer.index();
       const config = {
         projectRoot: testDir,
@@ -162,63 +152,37 @@ export class UserAPI {
         priorityFiles: [],
       };
 
-      const rules = generateCursorRules(config);
+      const md = generateUceMd(config);
 
-      expect(rules).toContain('# Cursor Rules');
-      expect(rules).toContain('# Key Files');
-      expect(rules).toContain('# Guidelines');
-    });
-  });
-
-  describe('generateCopilotInstructions', () => {
-    it('should generate Copilot instructions', async () => {
-      const index = await indexer.index();
-      const config = {
-        projectRoot: testDir,
-        index,
-        maxTokens: 50000,
-        includeFileContents: false,
-        priorityFiles: [],
-      };
-
-      const md = generateCopilotInstructions(config);
-
-      expect(md).toContain('GitHub Copilot');
-      expect(md).toContain('Project Context');
+      expect(md).toContain('Development Guidelines');
+      expect(md).toContain('Quick Commands');
+      expect(md).toContain('npx uce');
     });
   });
 
   describe('ContextGenerator class', () => {
-    it('should generate all context files', async () => {
+    it('should generate UCE.md file', async () => {
       const index = await indexer.index();
       const generator = new ContextGenerator({ projectRoot: testDir, index });
 
-      // Default: only UCE.md
       generator.generateAll();
+
       expect(fs.existsSync(path.join(testDir, 'UCE.md'))).toBe(true);
 
-      // With all option: generates all files
-      generator.generateAll({ all: true });
-      expect(fs.existsSync(path.join(testDir, 'UCE.md'))).toBe(true);
-      expect(fs.existsSync(path.join(testDir, 'CONTEXT.md'))).toBe(true);
-      expect(fs.existsSync(path.join(testDir, 'CLAUDE.md'))).toBe(true);
-      expect(fs.existsSync(path.join(testDir, '.cursorrules'))).toBe(true);
-      expect(fs.existsSync(path.join(testDir, '.github', 'copilot-instructions.md'))).toBe(true);
+      const content = fs.readFileSync(path.join(testDir, 'UCE.md'), 'utf-8');
+      expect(content).toContain('Universal Context');
+      expect(content).toContain('AuthService');
     });
 
-    it('should generate individual context file', async () => {
+    it('should return UCE.md content without writing file', async () => {
       const index = await indexer.index();
       const generator = new ContextGenerator({ projectRoot: testDir, index });
 
-      const contextMd = generator.generate('context');
-      const claudeMd = generator.generate('claude');
-      const cursorRules = generator.generate('cursor');
-      const copilotMd = generator.generate('copilot');
+      const uceMd = generator.generate();
 
-      expect(contextMd).toContain('Project Context');
-      expect(claudeMd).toContain('Claude Code');
-      expect(cursorRules).toContain('Cursor Rules');
-      expect(copilotMd).toContain('Copilot');
+      expect(uceMd).toContain('Universal Context');
+      expect(uceMd).toContain('AuthService');
+      expect(uceMd).toContain('User');
     });
   });
 });

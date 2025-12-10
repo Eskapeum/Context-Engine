@@ -16,7 +16,7 @@ describe('ContextEngine', () => {
 
   beforeEach(() => {
     // Create a minimal test directory
-    testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ucm-engine-test-'));
+    testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'uce-engine-test-'));
 
     const srcDir = path.join(testDir, 'src');
     fs.mkdirSync(srcDir);
@@ -183,7 +183,7 @@ describe('ContextEngine Integration', () => {
   let testDir: string;
 
   beforeEach(() => {
-    testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ucm-engine-int-'));
+    testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'uce-engine-int-'));
 
     const srcDir = path.join(testDir, 'src');
     fs.mkdirSync(srcDir);

@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to Universal Context Memory (UCM) will be documented in this file.
+All notable changes to Universal Context Memory (UCE) will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -31,14 +31,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `.cursorrules` - Cursor IDE rules
   - `.github/copilot-instructions.md` - GitHub Copilot
 - **CLI Commands**:
-  - `ucm init` - Initialize UCM in a project
-  - `ucm index` - Re-index codebase
-  - `ucm watch` - Auto-update on file changes
-  - `ucm stats` - Show index statistics
-  - `ucm query <term>` - Search the index
-  - `ucm export` - Export index as JSON
-  - `ucm clean` - Remove generated files
-  - `ucm diff` - Show changes since last index
+  - `uce init` - Initialize UCE in a project
+  - `uce index` - Re-index codebase
+  - `uce watch` - Auto-update on file changes
+  - `uce stats` - Show index statistics
+  - `uce query <term>` - Search the index
+  - `uce export` - Export index as JSON
+  - `uce clean` - Remove generated files
+  - `uce diff` - Show changes since last index
 - **Programmatic API**:
   - `Indexer` class for custom indexing
   - `ContextGenerator` class for custom generation

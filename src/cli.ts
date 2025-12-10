@@ -13,11 +13,11 @@ import { ContextGenerator } from './generator.js';
 import { ContextEngine } from './context-engine.js';
 import { FileWatcher } from './core/watcher.js';
 import { KnowledgeGraph, GraphBuilder } from './graph/index.js';
-import { loadConfig, validateConfig, generateDefaultConfig, type UCMConfig } from './config.js';
+import { loadConfig, validateConfig, generateDefaultConfig, type UCEConfig } from './config.js';
 import * as fs from 'fs';
 import * as path from 'path';
 
-const VERSION = '2.2.0';
+const VERSION = '2.2.1';
 
 const program = new Command();
 
@@ -1082,7 +1082,7 @@ program
     console.log('  ✓ Knowledge graph analysis');
     console.log('  ✓ Semantic chunking');
     console.log('  ✓ MCP server for Claude Code');
-    console.log('  ✓ Context file generation (CLAUDE.md, .cursorrules, etc.)');
+    console.log('  ✓ Universal context file generation (UCE.md)');
     console.log('\nDocumentation: https://github.com/Eskapeum/Context-Engine');
   });
 

@@ -167,7 +167,7 @@ export interface IndexUpdateResult {
 // CONSTANTS
 // ============================================================================
 
-const UCM_VERSION = '2.0.0';
+const UCE_VERSION = '2.2.1';
 
 const DEFAULT_IGNORE = [
   'node_modules',
@@ -702,7 +702,7 @@ export class IncrementalIndexer {
 
   private createEmptyIndex(gitInfo: GitBranchInfo): ProjectIndex {
     return {
-      version: UCM_VERSION,
+      version: UCE_VERSION,
       name: this.getProjectName(),
       root: this.config.projectRoot,
       git: gitInfo,

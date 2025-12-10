@@ -1,6 +1,6 @@
 # GitHub Repository Setup Guide
 
-Quick guide to publish Universal Context Memory (UCM) to GitHub.
+Quick guide to publish Universal Context Memory (UCE) to GitHub.
 
 ## Step 1: Create GitHub Repository
 
@@ -15,8 +15,8 @@ Quick guide to publish Universal Context Memory (UCM) to GitHub.
 
 ```bash
 # Extract the package
-tar -xzf ucm-opensource.tar.gz
-cd ucm-opensource
+tar -xzf uce-opensource.tar.gz
+cd uce-opensource
 
 # Initialize git and push
 git init
@@ -92,7 +92,7 @@ Update these placeholders in README.md:
 npm install universal-context-memory
 
 # Test CLI works
-npx ucm init
+npx uce init
 ```
 
 ---

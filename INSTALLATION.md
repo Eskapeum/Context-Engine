@@ -65,12 +65,12 @@ npm link
 
 ```bash
 cd your-project
-npx ucm init
+npx uce init
 ```
 
 This creates:
 - `.context/index.json` - Full codebase index
-- `UCM.md` - Universal context (any AI)
+- `UCE.md` - Universal context (any AI)
 - `CONTEXT.md` - Generic LLM context
 - `CLAUDE.md` - Claude Code specific
 - `.cursorrules` - Cursor IDE rules
@@ -79,20 +79,20 @@ This creates:
 ### 2. Verify Installation
 
 ```bash
-npx ucm stats
+npx uce stats
 ```
 
 ### 3. Start Watch Mode (Optional)
 
 ```bash
-npx ucm watch
+npx uce watch
 ```
 
 ## Configuration
 
 ### Configuration File
 
-Create `.ucmrc.json` in your project root:
+Create `.ucerc.json` in your project root:
 
 ```json
 {
@@ -110,7 +110,7 @@ Create `.ucmrc.json` in your project root:
   "maxTokens": 50000,
   "enableEmbeddings": false,
   "output": {
-    "ucmMd": true,
+    "uceMd": true,
     "contextMd": true,
     "claudeMd": true,
     "cursorRules": true,
@@ -128,16 +128,16 @@ Create `.ucmrc.json` in your project root:
 
 ### Alternative: JavaScript Config
 
-Create `ucm.config.js`:
+Create `uce.config.js`:
 
 ```javascript
-/** @type {import('universal-context-memory').UCMConfig} */
+/** @type {import('universal-context-memory').UCEConfig} */
 export default {
   projectName: 'my-project',
   ignore: ['**/dist/**'],
   enableEmbeddings: false,
   output: {
-    ucmMd: true,
+    uceMd: true,
     contextMd: true,
     claudeMd: true,
   },
@@ -153,7 +153,7 @@ export default {
 | `priorityFiles` | string[] | [] | Files to prioritize in context |
 | `maxTokens` | number | 50000 | Maximum tokens for context output |
 | `enableEmbeddings` | boolean | false | Enable semantic embeddings |
-| `output.ucmMd` | boolean | true | Generate UCM.md (universal) |
+| `output.uceMd` | boolean | true | Generate UCE.md (universal) |
 | `output.contextMd` | boolean | true | Generate CONTEXT.md |
 | `output.claudeMd` | boolean | true | Generate CLAUDE.md |
 | `output.cursorRules` | boolean | true | Generate .cursorrules |
@@ -165,13 +165,13 @@ export default {
 ### Generate Default Config
 
 ```bash
-npx ucm config --init
+npx uce config --init
 ```
 
 ### Validate Config
 
 ```bash
-npx ucm config --validate
+npx uce config --validate
 ```
 
 ## MCP Server Setup
@@ -181,7 +181,7 @@ UCE includes a Model Context Protocol (MCP) server for direct AI assistant integ
 ### Start MCP Server
 
 ```bash
-npx ucm serve --port 3333
+npx uce serve --port 3333
 ```
 
 ### Claude Code Integration
@@ -191,9 +191,9 @@ Add to your Claude Code MCP configuration:
 ```json
 {
   "mcpServers": {
-    "ucm": {
+    "uce": {
       "command": "npx",
-      "args": ["ucm", "serve", "--port", "3333"],
+      "args": ["uce", "serve", "--port", "3333"],
       "cwd": "/path/to/your/project"
     }
   }
@@ -309,11 +309,11 @@ npm install
 
 ```bash
 # Force re-index
-npx ucm index --force
+npx uce index --force
 
 # Or clear cache
-rm -rf .context .ucm
-npx ucm init
+rm -rf .context .uce
+npx uce init
 ```
 
 #### Watch Mode Not Detecting Changes
@@ -327,14 +327,14 @@ Check that the file isn't in `.gitignore` or `.contextignore`.
 lsof -i :3333
 
 # Try a different port
-npx ucm serve --port 4444
+npx uce serve --port 4444
 ```
 
 ### Debug Mode
 
 ```bash
 # Enable verbose logging
-DEBUG=ucm:* npx ucm index
+DEBUG=uce:* npx uce index
 ```
 
 ### Getting Help

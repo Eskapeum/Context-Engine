@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/ucm-logo.svg" width="200" alt="Universal Context Engine Logo">
+  <img src="assets/uce-logo.svg" width="200" alt="Universal Context Engine Logo">
 </p>
 
 <h1 align="center">Universal Context Engine (UCE) v2.0.1</h1>
@@ -32,7 +32,7 @@ Universal Context Engine indexes your codebase and provides intelligent context 
 ```bash
 # Install and index your project
 npm install universal-context-memory
-npx ucm init
+npx uce init
 
 # That's it! Claude Code, Cursor, and Copilot now understand your codebase
 ```
@@ -86,14 +86,14 @@ See [INSTALLATION.md](INSTALLATION.md) for detailed setup instructions.
 ### 1. Initialize
 
 ```bash
-npx ucm init
+npx uce init
 ```
 
 Creates:
 ```
 your-project/
 ├── .context/index.json      # Codebase index
-├── UCM.md                   # Universal context (any AI)
+├── UCE.md                   # Universal context (any AI)
 ├── CONTEXT.md               # Generic LLM context
 ├── CLAUDE.md                # Claude Code specific
 ├── .cursorrules             # Cursor IDE
@@ -103,63 +103,63 @@ your-project/
 ### 2. View Stats
 
 ```bash
-npx ucm stats
+npx uce stats
 ```
 
 ### 3. Search Your Code
 
 ```bash
-npx ucm search "authentication"
+npx uce search "authentication"
 ```
 
 ### 4. Start Watch Mode
 
 ```bash
-npx ucm watch
+npx uce watch
 ```
 
 ## Commands
 
 | Command | Description |
 |---------|-------------|
-| `ucm init` | Initialize UCE in a project |
-| `ucm index` | Re-index the codebase |
-| `ucm watch` | Watch for changes and auto-update |
-| `ucm stats` | Show index statistics |
-| `ucm search <query>` | Search codebase with BM25 |
-| `ucm query <term>` | Query symbols and files |
-| `ucm graph` | Export knowledge graph (JSON/DOT/Mermaid) |
-| `ucm related <symbol>` | Find related symbols |
-| `ucm callers <function>` | Find function callers |
-| `ucm inheritance <class>` | Show class hierarchy |
-| `ucm serve` | Start MCP server |
-| `ucm config` | Manage configuration |
-| `ucm info` | Show version and system info |
-| `ucm clean` | Remove generated files |
-| `ucm export` | Export index as JSON |
+| `uce init` | Initialize UCE in a project |
+| `uce index` | Re-index the codebase |
+| `uce watch` | Watch for changes and auto-update |
+| `uce stats` | Show index statistics |
+| `uce search <query>` | Search codebase with BM25 |
+| `uce query <term>` | Query symbols and files |
+| `uce graph` | Export knowledge graph (JSON/DOT/Mermaid) |
+| `uce related <symbol>` | Find related symbols |
+| `uce callers <function>` | Find function callers |
+| `uce inheritance <class>` | Show class hierarchy |
+| `uce serve` | Start MCP server |
+| `uce config` | Manage configuration |
+| `uce info` | Show version and system info |
+| `uce clean` | Remove generated files |
+| `uce export` | Export index as JSON |
 
 ### Examples
 
 ```bash
 # Search for authentication code
-npx ucm search "login validation"
+npx uce search "login validation"
 
 # Find all callers of a function
-npx ucm callers handleSubmit
+npx uce callers handleSubmit
 
 # Show class inheritance tree
-npx ucm inheritance BaseController
+npx uce inheritance BaseController
 
 # Export graph as Mermaid diagram
-npx ucm graph --format mermaid > architecture.md
+npx uce graph --format mermaid > architecture.md
 
 # Start MCP server on custom port
-npx ucm serve --port 4000
+npx uce serve --port 4000
 ```
 
 ## Configuration
 
-Create `.ucmrc.json`:
+Create `.ucerc.json`:
 
 ```json
 {
@@ -169,7 +169,7 @@ Create `.ucmrc.json`:
   "maxTokens": 50000,
   "enableEmbeddings": false,
   "output": {
-    "ucmMd": true,
+    "uceMd": true,
     "contextMd": true,
     "claudeMd": true,
     "cursorRules": true,
@@ -180,7 +180,7 @@ Create `.ucmrc.json`:
 
 Generate default config:
 ```bash
-npx ucm config --init
+npx uce config --init
 ```
 
 ## API
@@ -233,7 +233,7 @@ UCE includes a Model Context Protocol server for direct AI assistant integration
 ### Start Server
 
 ```bash
-npx ucm serve --port 3333
+npx uce serve --port 3333
 ```
 
 ### Claude Code Integration
@@ -243,9 +243,9 @@ Add to your MCP configuration:
 ```json
 {
   "mcpServers": {
-    "ucm": {
+    "uce": {
       "command": "npx",
-      "args": ["ucm", "serve"],
+      "args": ["uce", "serve"],
       "cwd": "/path/to/project"
     }
   }

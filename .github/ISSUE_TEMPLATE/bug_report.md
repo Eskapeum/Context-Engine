@@ -26,7 +26,7 @@ What actually happened.
 
 ## Environment
 
-- UCM Version: [e.g., 1.0.0]
+- UCE Version: [e.g., 1.0.0]
 - Node.js Version: [e.g., 20.10.0]
 - OS: [e.g., macOS 14.0, Ubuntu 22.04, Windows 11]
 - Package Manager: [npm/yarn/pnpm]
@@ -34,7 +34,7 @@ What actually happened.
 ## Index Statistics (if relevant)
 
 ```
-Run `ucm stats` and paste output here
+Run `uce stats` and paste output here
 ```
 
 ## Error Output

@@ -23,7 +23,7 @@ Any alternative solutions or features you've considered.
 Describe how this feature would be used:
 
 1. User does X
-2. UCM does Y
+2. UCE does Y
 3. User benefits by Z
 
 ## Additional Context

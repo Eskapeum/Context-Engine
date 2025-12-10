@@ -1,5 +1,5 @@
 /**
- * Universal Context Engine (UCM) v2.0
+ * Universal Context Engine (UCE) v2.2
  *
  * The most intelligent context engine for AI coding assistants.
  *
@@ -12,11 +12,11 @@
  * - MCP server for Claude Code integration
  *
  * @packageDocumentation
- * @module universal-context-memory
+ * @module universal-context-engine
  *
  * @example Quick Start
  * ```ts
- * import { ContextEngine } from 'universal-context-memory';
+ * import { ContextEngine } from 'universal-context-engine';
  *
  * const engine = new ContextEngine({ projectRoot: '/path/to/project' });
  * await engine.initialize();
@@ -28,7 +28,7 @@
  *
  * @example MCP Server
  * ```ts
- * import { MCPServer } from 'universal-context-memory';
+ * import { MCPServer } from 'universal-context-engine';
  *
  * const server = new MCPServer('/path/to/project');
  * await server.start(3333);
@@ -142,7 +142,7 @@ export {
   generateDefaultConfig,
   DEFAULT_CONFIG,
 } from './config.js';
-export type { UCMConfig } from './config.js';
+export type { UCEConfig } from './config.js';
 
 // MCP Server
 export { MCPServer } from './mcp/server.js';
@@ -242,7 +242,7 @@ export async function startMCPServer(
 /**
  * Version of the UCE package.
  */
-export const VERSION = '2.2.0';
+export const VERSION = '2.2.1';
 
 // Default export for convenience
 export default {

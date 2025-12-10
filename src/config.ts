@@ -21,7 +21,7 @@ import { pathToFileURL } from 'url';
 /**
  * UCE configuration schema
  */
-export interface UCMConfig {
+export interface UCEConfig {
   /** Project name override */
   projectName?: string;
 
@@ -47,16 +47,8 @@ export interface UCMConfig {
 
   /** Output configuration */
   output?: {
-    /** Generate UCM.md (universal context file) */
+    /** Generate UCE.md (universal context file) */
     uceMd?: boolean;
-    /** Generate CONTEXT.md */
-    contextMd?: boolean;
-    /** Generate CLAUDE.md */
-    claudeMd?: boolean;
-    /** Generate .cursorrules */
-    cursorRules?: boolean;
-    /** Generate .github/copilot-instructions.md */
-    copilotInstructions?: boolean;
     /** Custom output directory */
     directory?: string;
   };
@@ -103,7 +95,7 @@ export interface UCMConfig {
 /**
  * Default configuration values
  */
-export const DEFAULT_CONFIG: Required<UCMConfig> = {
+export const DEFAULT_CONFIG: Required<UCEConfig> = {
   projectName: '',
   ignore: [],
   priorityFiles: [],
@@ -116,10 +108,6 @@ export const DEFAULT_CONFIG: Required<UCMConfig> = {
   },
   output: {
     uceMd: true,
-    contextMd: true,
-    claudeMd: true,
-    cursorRules: true,
-    copilotInstructions: true,
     directory: '.',
   },
   watch: {
@@ -164,7 +152,7 @@ const CONFIG_FILES = [
  * @param projectRoot - Project root directory
  * @returns Merged configuration with defaults
  */
-export async function loadConfig(projectRoot: string): Promise<UCMConfig> {
+export async function loadConfig(projectRoot: string): Promise<UCEConfig> {
   const resolvedRoot = path.resolve(projectRoot);
 
   // Try each config file
@@ -201,7 +189,7 @@ export async function loadConfig(projectRoot: string): Promise<UCMConfig> {
 /**
  * Load a specific config file
  */
-async function loadConfigFile(configPath: string): Promise<UCMConfig> {
+async function loadConfigFile(configPath: string): Promise<UCEConfig> {
   const ext = path.extname(configPath);
 
   if (ext === '.json' || configPath.endsWith('.ucerc')) {
@@ -223,7 +211,7 @@ async function loadConfigFile(configPath: string): Promise<UCMConfig> {
 /**
  * Merge user config with defaults
  */
-function mergeConfig(userConfig: Partial<UCMConfig>): UCMConfig {
+function mergeConfig(userConfig: Partial<UCEConfig>): UCEConfig {
   return {
     projectName: userConfig.projectName ?? DEFAULT_CONFIG.projectName,
     ignore: [...DEFAULT_CONFIG.ignore, ...(userConfig.ignore || [])],
@@ -260,7 +248,7 @@ function mergeConfig(userConfig: Partial<UCMConfig>): UCMConfig {
 /**
  * Validate configuration
  */
-export function validateConfig(config: UCMConfig): { valid: boolean; errors: string[] } {
+export function validateConfig(config: UCEConfig): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
 
   if (config.maxTokens !== undefined && config.maxTokens < 1000) {
@@ -301,10 +289,6 @@ export function generateDefaultConfig(format: 'json' | 'js' = 'json'): string {
         enableEmbeddings: false,
         output: {
           uceMd: true,
-          contextMd: true,
-          claudeMd: true,
-          cursorRules: true,
-          copilotInstructions: true,
         },
         watch: {
           debounceMs: 500,
@@ -321,7 +305,7 @@ export function generateDefaultConfig(format: 'json' | 'js' = 'json'): string {
 
   return `/**
  * UCE Configuration
- * @type {import('universal-context-memory').UCMConfig}
+ * @type {import('universal-context-engine').UCEConfig}
  */
 export default {
   // Project name override
@@ -349,10 +333,6 @@ export default {
   // Output configuration
   output: {
     uceMd: true,
-    contextMd: true,
-    claudeMd: true,
-    cursorRules: true,
-    copilotInstructions: true,
   },
 
   // Watch mode configuration

@@ -13,7 +13,7 @@ describe('Indexer', () => {
 
   beforeEach(() => {
     // Create a temporary test directory
-    testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ucm-test-'));
+    testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'uce-test-'));
   });
 
   afterEach(() => {

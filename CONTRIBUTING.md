@@ -1,6 +1,6 @@
-# Contributing to Universal Context Memory (UCM)
+# Contributing to Universal Context Memory (UCE)
 
-Thank you for your interest in contributing to UCM! This project is part of the **Lyceum AI Academy** mission to make AI-assisted development accessible to everyone.
+Thank you for your interest in contributing to UCE! This project is part of the **Lyceum AI Academy** mission to make AI-assisted development accessible to everyone.
 
 ## Table of Contents
 
@@ -83,7 +83,7 @@ npm link
 
 # Now you can test in any project:
 cd /path/to/test/project
-ucm init
+uce init
 ```
 
 ### Watch Mode (Auto-rebuild)
@@ -194,7 +194,7 @@ npm run build
 
 ## Adding Language Support
 
-UCM uses regex-based pattern matching to extract symbols. To add a new language:
+UCE uses regex-based pattern matching to extract symbols. To add a new language:
 
 ### 1. Add Language Config
 
@@ -368,10 +368,10 @@ Contributors are recognized in:
 
 ## License
 
-By contributing to UCM, you agree that your contributions will be licensed under the MIT License.
+By contributing to UCE, you agree that your contributions will be licensed under the MIT License.
 
 ---
 
-Thank you for contributing to UCM! 🎉
+Thank you for contributing to UCE! 🎉
 
 **Built with ❤️ by the Lyceum AI Academy community**

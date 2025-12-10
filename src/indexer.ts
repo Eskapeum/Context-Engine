@@ -12,6 +12,9 @@ import * as path from 'path';
 import { glob } from 'glob';
 import ignoreModule from 'ignore';
 
+/** UCE version - keep in sync with package.json */
+const UCE_VERSION = '2.4.1';
+
 const ignore = (ignoreModule as any).default || ignoreModule;
 type IgnoreInstance = ReturnType<typeof ignore>;
 
@@ -446,7 +449,7 @@ export class Indexer {
     const totalSymbols = Object.values(fileIndexes).reduce((sum, f) => sum + f.symbols.length, 0);
 
     return {
-      uceVersion: '1.0.0',
+      uceVersion: UCE_VERSION,
       projectName,
       projectRoot: this.config.projectRoot,
       indexedAt: new Date().toISOString(),

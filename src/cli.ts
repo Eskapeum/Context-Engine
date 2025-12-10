@@ -17,7 +17,7 @@ import { loadConfig, validateConfig, generateDefaultConfig, type UCEConfig } fro
 import * as fs from 'fs';
 import * as path from 'path';
 
-const VERSION = '2.3.1';
+const VERSION = '2.3.2';
 
 const program = new Command();
 
@@ -1102,20 +1102,21 @@ program
       try {
         ensureDir(claudeDir);
 
-        // Create slash command files
+        // Create slash command files (use full package name due to npm 'uce' conflict)
+        const npxCmd = 'npx universal-context-engine';
         const commands = [
-          { name: 'init', desc: 'Initialize UCE', cmd: 'npx uce init' },
-          { name: 'index', desc: 'Re-index codebase', cmd: 'npx uce index' },
-          { name: 'search', desc: 'Search codebase', cmd: 'npx uce search "$ARGUMENTS"', args: true },
-          { name: 'query', desc: 'Query symbols', cmd: 'npx uce query "$ARGUMENTS"', args: true },
-          { name: 'callers', desc: 'Find callers', cmd: 'npx uce callers "$ARGUMENTS"', args: true },
-          { name: 'related', desc: 'Find related', cmd: 'npx uce related "$ARGUMENTS"', args: true },
-          { name: 'inheritance', desc: 'Class hierarchy', cmd: 'npx uce inheritance "$ARGUMENTS"', args: true },
-          { name: 'graph', desc: 'Export graph', cmd: 'npx uce graph --format mermaid' },
-          { name: 'stats', desc: 'Show stats', cmd: 'npx uce stats' },
-          { name: 'watch', desc: 'Watch mode', cmd: 'npx uce watch' },
-          { name: 'diff', desc: 'Show changes', cmd: 'npx uce diff' },
-          { name: 'serve', desc: 'Start MCP', cmd: 'npx uce serve' },
+          { name: 'init', desc: 'Initialize UCE', cmd: `${npxCmd} init` },
+          { name: 'index', desc: 'Re-index codebase', cmd: `${npxCmd} index` },
+          { name: 'search', desc: 'Search codebase', cmd: `${npxCmd} search "$ARGUMENTS"`, args: true },
+          { name: 'query', desc: 'Query symbols', cmd: `${npxCmd} query "$ARGUMENTS"`, args: true },
+          { name: 'callers', desc: 'Find callers', cmd: `${npxCmd} callers "$ARGUMENTS"`, args: true },
+          { name: 'related', desc: 'Find related', cmd: `${npxCmd} related "$ARGUMENTS"`, args: true },
+          { name: 'inheritance', desc: 'Class hierarchy', cmd: `${npxCmd} inheritance "$ARGUMENTS"`, args: true },
+          { name: 'graph', desc: 'Export graph', cmd: `${npxCmd} graph --format mermaid` },
+          { name: 'stats', desc: 'Show stats', cmd: `${npxCmd} stats` },
+          { name: 'watch', desc: 'Watch mode', cmd: `${npxCmd} watch` },
+          { name: 'diff', desc: 'Show changes', cmd: `${npxCmd} diff` },
+          { name: 'serve', desc: 'Start MCP', cmd: `${npxCmd} serve` },
         ];
 
         for (const cmd of commands) {
@@ -1154,10 +1155,10 @@ ${cmd.cmd}
           const cursorHeader = `# UCE Commands for Cursor
 
 Available commands:
-- \`npx uce search "<query>"\` - Search codebase
-- \`npx uce callers <fn>\` - Find callers
-- \`npx uce related <symbol>\` - Find related
-- \`npx uce index\` - Re-index
+- \`npx universal-context-engine search "<query>"\` - Search codebase
+- \`npx universal-context-engine callers <fn>\` - Find callers
+- \`npx universal-context-engine related <symbol>\` - Find related
+- \`npx universal-context-engine index\` - Re-index
 
 ---
 
@@ -1173,14 +1174,14 @@ Available commands:
 Run these commands for better context:
 
 \`\`\`bash
-npx uce search "<query>"   # Search codebase
-npx uce callers <function> # Find callers
-npx uce related <symbol>   # Find related
-npx uce index              # Re-index
-npx uce stats              # Show stats
+npx universal-context-engine search "<query>"   # Search codebase
+npx universal-context-engine callers <function> # Find callers
+npx universal-context-engine related <symbol>   # Find related
+npx universal-context-engine index              # Re-index
+npx universal-context-engine stats              # Show stats
 \`\`\`
 
-Run \`npx uce init\` to generate UCE.md with full project context.
+Run \`npx universal-context-engine init\` to generate UCE.md with full project context.
 `;
           fs.writeFileSync(cursorFile, basicRules);
           installed.push('Cursor IDE (.cursorrules)');
@@ -1206,9 +1207,9 @@ Run \`npx uce init\` to generate UCE.md with full project context.
           const copilotHeader = `# UCE Context for GitHub Copilot
 
 Use these commands for better assistance:
-- \`npx uce search "<query>"\` - Search codebase
-- \`npx uce callers <fn>\` - Find function callers
-- \`npx uce related <symbol>\` - Find related code
+- \`npx universal-context-engine search "<query>"\` - Search codebase
+- \`npx universal-context-engine callers <fn>\` - Find function callers
+- \`npx universal-context-engine related <symbol>\` - Find related code
 
 ---
 
@@ -1220,13 +1221,13 @@ Use these commands for better assistance:
 This project uses UCE for codebase indexing.
 
 Available commands:
-- \`npx uce init\` - Initialize UCE
-- \`npx uce search "<query>"\` - Search codebase
-- \`npx uce callers <function>\` - Find callers
-- \`npx uce related <symbol>\` - Find related
-- \`npx uce index\` - Re-index codebase
+- \`npx universal-context-engine init\` - Initialize UCE
+- \`npx universal-context-engine search "<query>"\` - Search codebase
+- \`npx universal-context-engine callers <function>\` - Find callers
+- \`npx universal-context-engine related <symbol>\` - Find related
+- \`npx universal-context-engine index\` - Re-index codebase
 
-Run \`npx uce init\` to generate UCE.md with full project context.
+Run \`npx universal-context-engine init\` to generate UCE.md with full project context.
 `;
           fs.writeFileSync(copilotFile, basicInstructions);
         }
@@ -1251,12 +1252,12 @@ Run \`npx uce init\` to generate UCE.md with full project context.
           name: 'UCE Commands',
           version: VERSION,
           commands: [
-            { name: 'uce-init', command: 'npx uce init', description: 'Initialize UCE' },
-            { name: 'uce-index', command: 'npx uce index', description: 'Re-index codebase' },
-            { name: 'uce-search', command: 'npx uce search', description: 'Search codebase', args: ['query'] },
-            { name: 'uce-callers', command: 'npx uce callers', description: 'Find callers', args: ['function'] },
-            { name: 'uce-related', command: 'npx uce related', description: 'Find related', args: ['symbol'] },
-            { name: 'uce-stats', command: 'npx uce stats', description: 'Show statistics' },
+            { name: 'uce-init', command: 'npx universal-context-engine init', description: 'Initialize UCE' },
+            { name: 'uce-index', command: 'npx universal-context-engine index', description: 'Re-index codebase' },
+            { name: 'uce-search', command: 'npx universal-context-engine search', description: 'Search codebase', args: ['query'] },
+            { name: 'uce-callers', command: 'npx universal-context-engine callers', description: 'Find callers', args: ['function'] },
+            { name: 'uce-related', command: 'npx universal-context-engine related', description: 'Find related', args: ['symbol'] },
+            { name: 'uce-stats', command: 'npx universal-context-engine stats', description: 'Show statistics' },
           ],
         };
 
@@ -1284,9 +1285,9 @@ Run \`npx uce init\` to generate UCE.md with full project context.
             { name: 'uce', params: { file: 'UCE.md' } },
           ],
           slashCommands: [
-            { name: 'uce-search', command: 'npx uce search "{{input}}"' },
-            { name: 'uce-callers', command: 'npx uce callers {{input}}' },
-            { name: 'uce-index', command: 'npx uce index' },
+            { name: 'uce-search', command: 'npx universal-context-engine search "{{input}}"' },
+            { name: 'uce-callers', command: 'npx universal-context-engine callers {{input}}' },
+            { name: 'uce-index', command: 'npx universal-context-engine index' },
           ],
         };
 
@@ -1314,8 +1315,8 @@ Run \`npx uce init\` to generate UCE.md with full project context.
     }
 
     console.log('\n💡 Tips:');
-    console.log('  • Run `npx uce init` to generate UCE.md context file');
-    console.log('  • Run `npx uce install --assistant claude --global` for global Claude commands');
+    console.log('  • Run `npx universal-context-engine init` to generate UCE.md context file');
+    console.log('  • Run `npx universal-context-engine install --assistant claude --global` for global Claude commands');
     console.log('  • Commit generated files to share with your team\n');
   });
 

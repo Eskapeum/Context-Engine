@@ -1,0 +1,46 @@
+# Universal Context Engine (UCE) - Cursor Rules
+
+## Available UCE Commands
+
+When working with this codebase, you can use these UCE commands to get better context:
+
+### Indexing & Context
+- `npx uce init` - Initialize UCE in the project
+- `npx uce index` - Re-index the codebase
+- `npx uce generate` - Regenerate UCE.md
+- `npx uce watch` - Watch for changes and auto-update
+- `npx uce stats` - Show index statistics
+
+### Search & Query
+- `npx uce search "<query>"` - Search codebase with BM25
+- `npx uce query "<term>"` - Query symbols and files
+
+### Code Navigation
+- `npx uce callers <function>` - Find function callers
+- `npx uce related <symbol>` - Find related symbols
+- `npx uce inheritance <class>` - Show class hierarchy
+- `npx uce graph --format mermaid` - Export knowledge graph
+
+### Utilities
+- `npx uce diff` - Show changes since last index
+- `npx uce export` - Export index as JSON
+- `npx uce clean` - Remove generated files
+- `npx uce info` - Show version info
+
+## Context File
+
+The `UCE.md` file in this project contains:
+- Project structure and file tree
+- Key symbols (classes, functions, interfaces)
+- Public API documentation
+- Dependency graph
+- Development guidelines
+
+Read UCE.md for comprehensive project context before making changes.
+
+## Best Practices
+
+1. Run `npx uce index` after major changes
+2. Use `npx uce search` to find relevant code
+3. Use `npx uce callers` before modifying functions
+4. Commit UCE.md to share context with team

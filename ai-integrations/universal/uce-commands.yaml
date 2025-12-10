@@ -1,0 +1,268 @@
+# Universal Context Engine (UCE) Commands
+# Compatible with any AI coding assistant
+# Version: 2.2.1
+
+name: Universal Context Engine
+description: Live context intelligence for AI coding assistants
+package: universal-context-engine
+binary: uce
+version: 2.2.1
+
+# Installation
+install:
+  npm: npm install universal-context-engine
+  yarn: yarn add universal-context-engine
+  pnpm: pnpm add universal-context-engine
+  global: npm install -g universal-context-engine
+
+# Context file
+context:
+  file: UCE.md
+  description: Universal context file that works with any AI assistant
+  index_directory: .uce
+
+# Commands
+commands:
+  # Initialization
+  init:
+    command: npx uce init
+    description: Initialize UCE in the project
+    output:
+      - .uce/index.json
+      - UCE.md
+
+  hello:
+    command: npx uce hello
+    description: Guided onboarding for new users
+    interactive: true
+
+  # Indexing
+  index:
+    command: npx uce index
+    description: Re-index the codebase and regenerate UCE.md
+    options:
+      - name: --path
+        type: string
+        description: Project path
+        default: current directory
+      - name: --no-generate
+        type: boolean
+        description: Index only, don't regenerate UCE.md
+
+  generate:
+    command: npx uce generate
+    description: Regenerate UCE.md from existing index
+    options:
+      - name: --path
+        type: string
+        description: Project path
+
+  watch:
+    command: npx uce watch
+    description: Watch for file changes and auto-update
+    options:
+      - name: --debounce
+        type: number
+        description: Debounce delay in milliseconds
+        default: 500
+
+  # Search & Query
+  search:
+    command: npx uce search "<query>"
+    description: Search codebase with BM25
+    args:
+      - name: query
+        type: string
+        required: true
+        description: Search query
+    options:
+      - name: --limit
+        type: number
+        description: Maximum results
+        default: 10
+      - name: --mode
+        type: string
+        description: Search mode (hybrid, bm25, semantic)
+        default: bm25
+      - name: --show-content
+        type: boolean
+        description: Show matching content snippets
+
+  query:
+    command: npx uce query "<term>"
+    description: Query symbols and files
+    args:
+      - name: term
+        type: string
+        required: true
+        description: Search term
+
+  # Code Navigation
+  callers:
+    command: npx uce callers <function>
+    description: Find all callers of a function
+    args:
+      - name: function
+        type: string
+        required: true
+        description: Function name
+
+  related:
+    command: npx uce related <symbol>
+    description: Find symbols related to the given symbol
+    args:
+      - name: symbol
+        type: string
+        required: true
+        description: Symbol name
+    options:
+      - name: --depth
+        type: number
+        description: Maximum relationship depth
+        default: 2
+
+  inheritance:
+    command: npx uce inheritance <class>
+    description: Show class inheritance hierarchy
+    args:
+      - name: class
+        type: string
+        required: true
+        description: Class name
+
+  graph:
+    command: npx uce graph
+    description: Export knowledge graph
+    options:
+      - name: --format
+        type: string
+        description: Output format (json, dot, mermaid)
+        default: json
+      - name: --output
+        type: string
+        description: Output file
+      - name: --filter
+        type: string
+        description: Filter by node type
+
+  # MCP Server
+  serve:
+    command: npx uce serve
+    description: Start MCP server for AI integration
+    options:
+      - name: --port
+        type: number
+        description: Port to listen on
+        default: 3333
+      - name: --watch
+        type: boolean
+        description: Enable file watching
+
+  # Utilities
+  stats:
+    command: npx uce stats
+    description: Show index statistics
+
+  diff:
+    command: npx uce diff
+    description: Show changes since last index
+
+  export:
+    command: npx uce export
+    description: Export index as JSON
+    options:
+      - name: --output
+        type: string
+        description: Output file
+        default: context-export.json
+
+  clean:
+    command: npx uce clean
+    description: Remove generated files (.uce/ and UCE.md)
+
+  config:
+    command: npx uce config
+    description: Manage configuration
+    options:
+      - name: --init
+        type: boolean
+        description: Generate new config file
+      - name: --validate
+        type: boolean
+        description: Validate existing config
+      - name: --show
+        type: boolean
+        description: Show current config
+
+  info:
+    command: npx uce info
+    description: Show version and system information
+
+# MCP Server Configuration
+mcp:
+  server:
+    command: npx
+    args:
+      - uce
+      - serve
+    tools:
+      - retrieve
+      - search
+      - related
+      - callers
+      - inheritance
+      - dependencies
+      - stats
+
+# Integration Examples
+integrations:
+  claude_code:
+    config_file: .claude/settings.json
+    mcp_config: |
+      {
+        "mcpServers": {
+          "uce": {
+            "command": "npx",
+            "args": ["uce", "serve"],
+            "cwd": "/path/to/project"
+          }
+        }
+      }
+
+  cursor:
+    config_file: .cursorrules
+    instruction: Copy UCE.md to .cursorrules or reference it
+
+  copilot:
+    config_file: .github/copilot-instructions.md
+    instruction: Copy UCE.md to .github/copilot-instructions.md
+
+  cline:
+    config_file: .cline/config.json
+    instruction: Add UCE commands to Cline configuration
+
+  continue:
+    config_file: .continue/config.json
+    instruction: Add UCE as context provider
+
+# Workflows
+workflows:
+  initial_setup:
+    steps:
+      - npm install universal-context-engine
+      - npx uce init
+      - git add UCE.md
+      - git commit -m "Add UCE context"
+
+  daily_workflow:
+    steps:
+      - npx uce index
+      - npx uce search "topic"
+      - Review and make changes
+      - npx uce diff
+      - git commit UCE.md
+
+  pre_commit:
+    steps:
+      - npx uce index
+      - git add UCE.md

@@ -1,0 +1,53 @@
+{
+  "name": "UCE",
+  "version": "2.2.1",
+  "description": "Universal Context Engine integration for Continue",
+  "contextProviders": [
+    {
+      "name": "uce-context",
+      "description": "Load UCE.md as context",
+      "params": {
+        "file": "UCE.md"
+      }
+    }
+  ],
+  "slashCommands": [
+    {
+      "name": "uce-init",
+      "description": "Initialize UCE in the project",
+      "command": "npx uce init"
+    },
+    {
+      "name": "uce-index",
+      "description": "Re-index the codebase",
+      "command": "npx uce index"
+    },
+    {
+      "name": "uce-search",
+      "description": "Search codebase",
+      "command": "npx uce search \"{{input}}\""
+    },
+    {
+      "name": "uce-callers",
+      "description": "Find function callers",
+      "command": "npx uce callers {{input}}"
+    },
+    {
+      "name": "uce-related",
+      "description": "Find related symbols",
+      "command": "npx uce related {{input}}"
+    },
+    {
+      "name": "uce-stats",
+      "description": "Show index statistics",
+      "command": "npx uce stats"
+    }
+  ],
+  "customCommands": [
+    {
+      "name": "context",
+      "prompt": "Read UCE.md and use it as context for understanding this codebase.",
+      "description": "Load UCE context"
+    }
+  ]
+}

@@ -225,6 +225,29 @@ const generator = new ContextGenerator({ projectRoot: '/path/to/project', index 
 generator.generateAll();
 ```
 
+## AI Assistant Integrations
+
+UCE works with all major AI coding assistants. See [ai-integrations/](ai-integrations/) for configuration files and commands.
+
+| Assistant | Integration |
+|-----------|-------------|
+| **Claude Code** | MCP server + slash commands |
+| **Cursor** | .cursorrules + UCE.md |
+| **GitHub Copilot** | copilot-instructions.md |
+| **Cline** | Custom commands |
+| **Continue** | Context provider |
+| **Others** | Universal YAML spec |
+
+### Quick Setup
+
+```bash
+# For Cursor - copy UCE.md as rules
+cp UCE.md .cursorrules
+
+# For Copilot - copy to instructions
+mkdir -p .github && cp UCE.md .github/copilot-instructions.md
+```
+
 ## MCP Server
 
 UCE includes a Model Context Protocol server for direct AI assistant integration.
@@ -320,6 +343,7 @@ MIT License - see [LICENSE](LICENSE)
 ## Links
 
 - [Installation Guide](INSTALLATION.md)
+- [AI Integrations](ai-integrations/)
 - [Contributing](CONTRIBUTING.md)
 - [Changelog](CHANGELOG.md)
 - [GitHub Issues](https://github.com/Eskapeum/Context-Engine/issues)

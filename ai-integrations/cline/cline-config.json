@@ -1,0 +1,73 @@
+{
+  "name": "UCE Integration",
+  "description": "Universal Context Engine commands for Cline",
+  "commands": [
+    {
+      "name": "uce-init",
+      "description": "Initialize UCE in the project",
+      "command": "npx uce init"
+    },
+    {
+      "name": "uce-index",
+      "description": "Re-index the codebase",
+      "command": "npx uce index"
+    },
+    {
+      "name": "uce-search",
+      "description": "Search codebase with BM25",
+      "command": "npx uce search",
+      "args": ["query"]
+    },
+    {
+      "name": "uce-query",
+      "description": "Query symbols and files",
+      "command": "npx uce query",
+      "args": ["term"]
+    },
+    {
+      "name": "uce-callers",
+      "description": "Find function callers",
+      "command": "npx uce callers",
+      "args": ["function"]
+    },
+    {
+      "name": "uce-related",
+      "description": "Find related symbols",
+      "command": "npx uce related",
+      "args": ["symbol"]
+    },
+    {
+      "name": "uce-inheritance",
+      "description": "Show class hierarchy",
+      "command": "npx uce inheritance",
+      "args": ["class"]
+    },
+    {
+      "name": "uce-graph",
+      "description": "Export knowledge graph",
+      "command": "npx uce graph --format mermaid"
+    },
+    {
+      "name": "uce-stats",
+      "description": "Show index statistics",
+      "command": "npx uce stats"
+    },
+    {
+      "name": "uce-watch",
+      "description": "Watch for changes",
+      "command": "npx uce watch"
+    },
+    {
+      "name": "uce-diff",
+      "description": "Show changes since last index",
+      "command": "npx uce diff"
+    },
+    {
+      "name": "uce-serve",
+      "description": "Start MCP server",
+      "command": "npx uce serve"
+    }
+  ],
+  "contextFile": "UCE.md",
+  "indexDirectory": ".uce"
+}

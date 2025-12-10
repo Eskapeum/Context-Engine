@@ -1,15 +1,16 @@
 # Installation Guide
 
-Complete installation and setup guide for Universal Context Engine (UCE) v2.2.
+Complete installation and setup guide for Universal Context Engine (UCE) v2.4.
 
 ## Table of Contents
 
 - [Requirements](#requirements)
 - [Installation Methods](#installation-methods)
 - [Quick Start](#quick-start)
+- [Auto-Indexing Setup](#auto-indexing-setup)
+- [AI Assistant Integration](#ai-assistant-integration)
 - [Configuration](#configuration)
 - [MCP Server Setup](#mcp-server-setup)
-- [IDE Integration](#ide-integration)
 - [Troubleshooting](#troubleshooting)
 
 ## Requirements
@@ -29,6 +30,8 @@ npm install universal-context-engine
 # Or install globally
 npm install -g universal-context-engine
 ```
+
+> **Note:** Use `npx universal-context-engine` (not `npx uce`) because there's an unrelated npm package named `uce`. After installing globally, you can use `uce` directly.
 
 ### Yarn
 
@@ -65,23 +68,162 @@ npm link
 
 ```bash
 cd your-project
-npx uce init
+npx universal-context-engine init
 ```
 
 This creates:
 - `.uce/index.json` - Full codebase index
 - `UCE.md` - Universal context file (works with any AI)
+- `.contextignore` - File patterns to exclude
 
 ### 2. Verify Installation
 
 ```bash
-npx uce stats
+npx universal-context-engine stats
 ```
 
-### 3. Start Watch Mode (Optional)
+### 3. Set Up Auto-Indexing (Recommended)
 
 ```bash
-npx uce watch
+# Install git pre-commit hook
+npx universal-context-engine hook
+```
+
+Now UCE.md will automatically update before every commit!
+
+### 4. Install AI Assistant Integrations
+
+```bash
+# Install slash commands for Claude Code
+npx universal-context-engine install --assistant claude --global
+
+# Or install all integrations for your project
+npx universal-context-engine install
+```
+
+## Auto-Indexing Setup
+
+UCE v2.4 provides automatic indexing to keep your UCE.md always up-to-date.
+
+### Option 1: Git Pre-commit Hook (Recommended)
+
+The hook automatically indexes your codebase before every commit:
+
+```bash
+# Install the hook
+npx universal-context-engine hook
+
+# Test it - make a change and commit
+git add .
+git commit -m "test"  # UCE runs automatically!
+
+# Remove the hook if needed
+npx universal-context-engine hook --uninstall
+```
+
+**Benefits:**
+- No background process needed
+- UCE.md is always committed with your code changes
+- Works with any git workflow
+- Zero maintenance
+
+### Option 2: Background Daemon
+
+For real-time updates during active development:
+
+```bash
+# Start the daemon
+npx universal-context-engine daemon
+
+# Check status
+npx universal-context-engine daemon --status
+
+# Stop the daemon
+npx universal-context-engine daemon --stop
+```
+
+**Benefits:**
+- Instant updates on every file save
+- Logs stored in `.uce/daemon.log`
+- Perfect for live development sessions
+
+### Option 3: Watch Mode (Interactive)
+
+For manual watch sessions:
+
+```bash
+npx universal-context-engine watch
+```
+
+Runs in foreground with live output. Press Ctrl+C to stop.
+
+### Comparison
+
+| Feature | Git Hook | Daemon | Watch Mode |
+|---------|----------|--------|------------|
+| Background process | No | Yes | Yes (foreground) |
+| Auto-commit staged | Yes | No | No |
+| Real-time updates | No | Yes | Yes |
+| Best for | Daily workflow | Active coding | Debugging |
+
+## AI Assistant Integration
+
+### Automatic Installation
+
+```bash
+# Install all supported integrations
+npx universal-context-engine install
+
+# Or install specific assistants
+npx universal-context-engine install --assistant claude        # Claude Code
+npx universal-context-engine install --assistant cursor        # Cursor IDE
+npx universal-context-engine install --assistant copilot       # GitHub Copilot
+npx universal-context-engine install --assistant cline         # Cline
+npx universal-context-engine install --assistant continue      # Continue
+
+# Install Claude commands globally (works in all projects)
+npx universal-context-engine install --assistant claude --global
+```
+
+### What Gets Installed
+
+| Assistant | Files Created | Location |
+|-----------|---------------|----------|
+| Claude Code | 15 slash commands | `.claude/commands/uce/` |
+| Cursor | .cursorrules | Project root |
+| Copilot | copilot-instructions.md | `.github/` |
+| Cline | uce-commands.json | `.cline/` |
+| Continue | uce-config.json | `.continue/` |
+
+### Manual Setup
+
+#### Claude Code
+
+Add to your MCP configuration:
+
+```json
+{
+  "mcpServers": {
+    "uce": {
+      "command": "npx",
+      "args": ["universal-context-engine", "serve"],
+      "cwd": "/path/to/your/project"
+    }
+  }
+}
+```
+
+#### Cursor IDE
+
+```bash
+cp UCE.md .cursorrules
+```
+
+#### GitHub Copilot
+
+```bash
+mkdir -p .github
+cp UCE.md .github/copilot-instructions.md
 ```
 
 ## Configuration
@@ -110,28 +252,20 @@ Create `.ucerc.json` in your project root:
   },
   "watch": {
     "debounceMs": 500
-  },
-  "chunking": {
-    "targetTokens": 500,
-    "maxTokens": 1000
   }
 }
 ```
 
-### Alternative: JavaScript Config
+### Generate Default Config
 
-Create `uce.config.js`:
+```bash
+npx universal-context-engine config --init
+```
 
-```javascript
-/** @type {import('universal-context-engine').UCEConfig} */
-export default {
-  projectName: 'my-project',
-  ignore: ['**/dist/**'],
-  enableEmbeddings: false,
-  output: {
-    uceMd: true,
-  },
-};
+### Validate Config
+
+```bash
+npx universal-context-engine config --validate
 ```
 
 ### Configuration Options
@@ -145,20 +279,6 @@ export default {
 | `enableEmbeddings` | boolean | false | Enable semantic embeddings |
 | `output.uceMd` | boolean | true | Generate UCE.md |
 | `watch.debounceMs` | number | 500 | Debounce delay for watch mode |
-| `chunking.targetTokens` | number | 500 | Target tokens per chunk |
-| `chunking.maxTokens` | number | 1000 | Maximum tokens per chunk |
-
-### Generate Default Config
-
-```bash
-npx uce config --init
-```
-
-### Validate Config
-
-```bash
-npx uce config --validate
-```
 
 ## MCP Server Setup
 
@@ -167,23 +287,7 @@ UCE includes a Model Context Protocol (MCP) server for direct AI assistant integ
 ### Start MCP Server
 
 ```bash
-npx uce serve --port 3333
-```
-
-### Claude Code Integration
-
-Add to your Claude Code MCP configuration:
-
-```json
-{
-  "mcpServers": {
-    "uce": {
-      "command": "npx",
-      "args": ["uce", "serve", "--port", "3333"],
-      "cwd": "/path/to/your/project"
-    }
-  }
-}
+npx universal-context-engine serve --port 3333
 ```
 
 ### Available MCP Tools
@@ -198,122 +302,83 @@ Add to your Claude Code MCP configuration:
 | `dependencies` | Get file dependencies |
 | `stats` | Get index statistics |
 
-## IDE Integration
+## CLI Commands Reference
 
-### Claude Code
-
-UCE generates `UCE.md` which provides universal context. You can also use the MCP server for direct integration.
-
-### Cursor IDE
-
-Copy or symlink `UCE.md` to `.cursorrules` if you want Cursor to pick it up:
-
-```bash
-cp UCE.md .cursorrules
-```
-
-### GitHub Copilot
-
-Copy `UCE.md` content to `.github/copilot-instructions.md`:
-
-```bash
-mkdir -p .github
-cp UCE.md .github/copilot-instructions.md
-```
-
-### VS Code
-
-Use the MCP server integration or reference `UCE.md` in your workflow.
-
-## Programmatic Usage
-
-### Basic Indexing
-
-```typescript
-import { Indexer, ContextGenerator } from 'universal-context-engine';
-
-const indexer = new Indexer({ projectRoot: '/path/to/project' });
-const index = await indexer.index();
-
-const generator = new ContextGenerator({ projectRoot: '/path/to/project', index });
-generator.generateAll();
-```
-
-### Context Engine (v2.x)
-
-```typescript
-import { ContextEngine } from 'universal-context-engine';
-
-const engine = new ContextEngine({
-  projectRoot: '/path/to/project',
-  enableEmbeddings: false,
-  autoIndex: true,
-});
-
-await engine.initialize();
-await engine.index();
-
-// Retrieve context for a query
-const context = await engine.retrieve('authentication flow');
-console.log(context.content);
-
-// Search symbols
-const results = engine.searchSymbols('login');
-
-// Find related code
-const related = engine.findRelated('AuthService');
-```
-
-### Knowledge Graph
-
-```typescript
-import { ContextEngine } from 'universal-context-engine';
-
-const engine = new ContextEngine({ projectRoot: '/path/to/project' });
-await engine.initialize();
-await engine.index();
-
-const graph = engine.getGraph();
-
-// Find callers of a function
-const callers = engine.findCallers('handleLogin');
-
-// Get class inheritance
-const hierarchy = engine.getInheritance('BaseController');
-
-// Get file dependencies
-const deps = engine.getDependencies('src/auth/index.ts');
-```
+| Command | Description |
+|---------|-------------|
+| `init` | Initialize UCE in a project |
+| `install` | Auto-install AI assistant integrations |
+| `index` | Re-index the codebase |
+| `generate` | Regenerate UCE.md from existing index |
+| `hook` | Install/uninstall git pre-commit hook |
+| `daemon` | Start/stop background file watcher |
+| `watch` | Watch for changes (foreground) |
+| `stats` | Show index statistics |
+| `search <query>` | Search codebase with BM25 |
+| `query <term>` | Query symbols and files |
+| `callers <fn>` | Find function callers |
+| `related <symbol>` | Find related symbols |
+| `inheritance <class>` | Show class hierarchy |
+| `graph` | Export knowledge graph |
+| `serve` | Start MCP server |
+| `config` | Manage configuration |
+| `diff` | Show changes since last index |
+| `clean` | Remove generated files |
+| `info` | Show version and system info |
+| `hello` | Guided onboarding |
 
 ## Troubleshooting
 
 ### Common Issues
 
-#### "Cannot find module" Error
+#### "npx uce" runs wrong package
 
+Use the full package name:
 ```bash
-# Rebuild the project
-npm run build
+npx universal-context-engine <command>
+```
 
-# Or reinstall
-rm -rf node_modules
-npm install
+Or install globally:
+```bash
+npm install -g universal-context-engine
+uce <command>
 ```
 
 #### Index Not Updating
 
 ```bash
 # Force re-index
-npx uce index
+npx universal-context-engine index
 
 # Or clear cache
 rm -rf .uce
-npx uce init
+npx universal-context-engine init
 ```
 
-#### Watch Mode Not Detecting Changes
+#### Git Hook Not Running
 
-Check that the file isn't in `.gitignore` or `.contextignore`.
+```bash
+# Check if hook exists
+ls -la .git/hooks/pre-commit
+
+# Reinstall hook
+npx universal-context-engine hook --uninstall
+npx universal-context-engine hook
+```
+
+#### Daemon Not Starting
+
+```bash
+# Check if already running
+npx universal-context-engine daemon --status
+
+# Check logs
+cat .uce/daemon.log
+
+# Stop and restart
+npx universal-context-engine daemon --stop
+npx universal-context-engine daemon
+```
 
 #### MCP Server Connection Issues
 
@@ -322,14 +387,7 @@ Check that the file isn't in `.gitignore` or `.contextignore`.
 lsof -i :3333
 
 # Try a different port
-npx uce serve --port 4444
-```
-
-### Debug Mode
-
-```bash
-# Enable verbose logging
-DEBUG=uce:* npx uce index
+npx universal-context-engine serve --port 4444
 ```
 
 ### Getting Help
@@ -340,6 +398,7 @@ DEBUG=uce:* npx uce index
 ## Next Steps
 
 1. **Commit UCE.md** to share context with your team
-2. **Enable watch mode** for automatic updates
-3. **Configure MCP server** for direct AI integration
-4. **Customize ignore patterns** for your project
+2. **Install git hook** for automatic updates on commit
+3. **Install AI integrations** for Claude, Cursor, Copilot, etc.
+4. **Configure ignore patterns** for your project
+5. **Set up MCP server** for direct AI integration

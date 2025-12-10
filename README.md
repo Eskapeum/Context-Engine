@@ -2,7 +2,7 @@
   <img src="assets/uce-logo.svg" width="200" alt="Universal Context Engine Logo">
 </p>
 
-<h1 align="center">Universal Context Engine (UCE) v2.3</h1>
+<h1 align="center">Universal Context Engine (UCE) v2.4</h1>
 
 <p align="center">
   <strong>The most intelligent context engine for AI coding assistants</strong>
@@ -113,11 +113,27 @@ npx uce stats
 npx uce search "authentication"
 ```
 
-### 4. Start Watch Mode
+### 4. Enable Auto-Indexing
 
+Choose one of these options to keep UCE.md updated automatically:
+
+**Option A: Git Hook (Recommended)**
+```bash
+npx universal-context-engine hook
+```
+Auto-indexes before every commit. No background process needed.
+
+**Option B: Background Daemon**
+```bash
+npx universal-context-engine daemon
+```
+Watches files and updates UCE.md on every save.
+
+**Option C: Watch Mode (Interactive)**
 ```bash
 npx uce watch
 ```
+Runs in foreground with live output.
 
 ## Commands
 
@@ -304,11 +320,58 @@ Add to your MCP configuration:
 | `dependencies` | Get file dependencies |
 | `stats` | Index statistics |
 
+## Auto-Indexing
+
+UCE v2.4 introduces automatic indexing so your UCE.md stays up-to-date without manual intervention.
+
+### Git Pre-commit Hook (Recommended)
+
+```bash
+# Install the hook
+npx universal-context-engine hook
+
+# UCE.md will auto-update before every commit
+git commit -m "your changes"  # UCE runs automatically!
+
+# Remove the hook
+npx universal-context-engine hook --uninstall
+```
+
+**Benefits:**
+- No background process needed
+- UCE.md is always committed with your code changes
+- Works with any git workflow
+
+### Background Daemon
+
+```bash
+# Start daemon
+npx universal-context-engine daemon
+
+# Check status
+npx universal-context-engine daemon --status
+
+# Stop daemon
+npx universal-context-engine daemon --stop
+```
+
+**Benefits:**
+- Real-time updates on every file save
+- Logs stored in `.uce/daemon.log`
+- Perfect for active development sessions
+
+### Slash Commands (Claude Code)
+
+After installing UCE integrations, use these slash commands:
+- `/uce:hook` - Install git pre-commit hook
+- `/uce:daemon` - Start background daemon
+- `/uce:daemon-stop` - Stop the daemon
+
 ## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  Universal Context Engine v2.2 Architecture                  │
+│  Universal Context Engine v2.4 Architecture                  │
 ├─────────────────────────────────────────────────────────────┤
 │                                                              │
 │  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐   │
@@ -324,8 +387,8 @@ Add to your MCP configuration:
 │         │                                                    │
 │         ▼                                                    │
 │  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐   │
-│  │ MCP Server   │    │  Generator   │    │    Watch     │   │
-│  │              │    │  (UCE.md)    │    │    Mode      │   │
+│  │ MCP Server   │    │  Generator   │    │ Auto-Index   │   │
+│  │              │    │  (UCE.md)    │    │ Hook/Daemon  │   │
 │  └──────────────┘    └──────────────┘    └──────────────┘   │
 │                                                              │
 └─────────────────────────────────────────────────────────────┘

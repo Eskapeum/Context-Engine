@@ -17,7 +17,7 @@ import { loadConfig, validateConfig, generateDefaultConfig, type UCEConfig } fro
 import * as fs from 'fs';
 import * as path from 'path';
 
-const VERSION = '2.3.2';
+const VERSION = '2.4.0';
 
 const program = new Command();
 
@@ -1117,6 +1117,9 @@ program
           { name: 'watch', desc: 'Watch mode', cmd: `${npxCmd} watch` },
           { name: 'diff', desc: 'Show changes', cmd: `${npxCmd} diff` },
           { name: 'serve', desc: 'Start MCP', cmd: `${npxCmd} serve` },
+          { name: 'hook', desc: 'Install git pre-commit hook', cmd: `${npxCmd} hook` },
+          { name: 'daemon', desc: 'Start background watcher', cmd: `${npxCmd} daemon` },
+          { name: 'daemon-stop', desc: 'Stop background watcher', cmd: `${npxCmd} daemon --stop` },
         ];
 
         for (const cmd of commands) {
@@ -1318,6 +1321,182 @@ Run \`npx universal-context-engine init\` to generate UCE.md with full project c
     console.log('  • Run `npx universal-context-engine init` to generate UCE.md context file');
     console.log('  • Run `npx universal-context-engine install --assistant claude --global` for global Claude commands');
     console.log('  • Commit generated files to share with your team\n');
+  });
+
+// ============================================================================
+// HOOK COMMAND (Git Pre-commit Hook)
+// ============================================================================
+
+program
+  .command('hook')
+  .description('Install/uninstall git pre-commit hook for auto-indexing')
+  .option('-p, --path <path>', 'Project path', process.cwd())
+  .option('-u, --uninstall', 'Remove the hook')
+  .action(async (options) => {
+    const projectRoot = path.resolve(options.path);
+    const gitDir = path.join(projectRoot, '.git');
+    const hooksDir = path.join(gitDir, 'hooks');
+    const hookFile = path.join(hooksDir, 'pre-commit');
+
+    if (!fs.existsSync(gitDir)) {
+      console.log('❌ Not a git repository. Run `git init` first.');
+      process.exit(1);
+    }
+
+    if (options.uninstall) {
+      // Remove hook
+      if (fs.existsSync(hookFile)) {
+        const content = fs.readFileSync(hookFile, 'utf-8');
+        if (content.includes('# UCE Auto-Index')) {
+          // Remove UCE section from hook
+          const newContent = content
+            .replace(/\n?# UCE Auto-Index[\s\S]*?# End UCE\n?/g, '')
+            .trim();
+          if (newContent && newContent !== '#!/bin/sh') {
+            fs.writeFileSync(hookFile, newContent + '\n');
+          } else {
+            fs.unlinkSync(hookFile);
+          }
+          console.log('✅ Removed UCE pre-commit hook');
+        } else {
+          console.log('ℹ️  No UCE hook found');
+        }
+      } else {
+        console.log('ℹ️  No pre-commit hook exists');
+      }
+      return;
+    }
+
+    // Install hook
+    if (!fs.existsSync(hooksDir)) {
+      fs.mkdirSync(hooksDir, { recursive: true });
+    }
+
+    const uceHook = `
+# UCE Auto-Index
+# Auto-update UCE.md before each commit
+if command -v npx &> /dev/null; then
+  echo "📇 UCE: Updating index..."
+  npx universal-context-engine index --no-generate 2>/dev/null || true
+  npx universal-context-engine generate 2>/dev/null || true
+  git add UCE.md .uce/ 2>/dev/null || true
+fi
+# End UCE
+`;
+
+    let existingContent = '';
+    if (fs.existsSync(hookFile)) {
+      existingContent = fs.readFileSync(hookFile, 'utf-8');
+      if (existingContent.includes('# UCE Auto-Index')) {
+        console.log('ℹ️  UCE hook already installed');
+        return;
+      }
+    } else {
+      existingContent = '#!/bin/sh\n';
+    }
+
+    fs.writeFileSync(hookFile, existingContent + uceHook);
+    fs.chmodSync(hookFile, '755');
+
+    console.log('✅ Installed UCE pre-commit hook');
+    console.log('   UCE.md will auto-update before each commit');
+    console.log('\n   To remove: npx universal-context-engine hook --uninstall');
+  });
+
+// ============================================================================
+// DAEMON COMMAND (Background File Watcher)
+// ============================================================================
+
+program
+  .command('daemon')
+  .description('Start/stop background file watcher daemon')
+  .option('-p, --path <path>', 'Project path', process.cwd())
+  .option('--stop', 'Stop the daemon')
+  .option('--status', 'Check daemon status')
+  .action(async (options) => {
+    const projectRoot = path.resolve(options.path);
+    const pidFile = path.join(projectRoot, '.uce', 'daemon.pid');
+    const logFile = path.join(projectRoot, '.uce', 'daemon.log');
+
+    // Check status
+    if (options.status) {
+      if (fs.existsSync(pidFile)) {
+        const pid = fs.readFileSync(pidFile, 'utf-8').trim();
+        try {
+          process.kill(parseInt(pid), 0); // Check if process exists
+          console.log(`✅ UCE daemon running (PID: ${pid})`);
+        } catch {
+          console.log('❌ UCE daemon not running (stale PID file)');
+          fs.unlinkSync(pidFile);
+        }
+      } else {
+        console.log('❌ UCE daemon not running');
+      }
+      return;
+    }
+
+    // Stop daemon
+    if (options.stop) {
+      if (fs.existsSync(pidFile)) {
+        const pid = fs.readFileSync(pidFile, 'utf-8').trim();
+        try {
+          process.kill(parseInt(pid), 'SIGTERM');
+          fs.unlinkSync(pidFile);
+          console.log(`✅ Stopped UCE daemon (PID: ${pid})`);
+        } catch {
+          console.log('ℹ️  Daemon already stopped');
+          fs.unlinkSync(pidFile);
+        }
+      } else {
+        console.log('ℹ️  No daemon running');
+      }
+      return;
+    }
+
+    // Check if already running
+    if (fs.existsSync(pidFile)) {
+      const pid = fs.readFileSync(pidFile, 'utf-8').trim();
+      try {
+        process.kill(parseInt(pid), 0);
+        console.log(`ℹ️  Daemon already running (PID: ${pid})`);
+        console.log('   To stop: npx universal-context-engine daemon --stop');
+        return;
+      } catch {
+        // Stale PID, continue
+      }
+    }
+
+    // Start daemon using child_process
+    const { spawn } = await import('child_process');
+
+    console.log('🚀 Starting UCE daemon...');
+
+    // Ensure .uce directory exists
+    const uceDir = path.join(projectRoot, '.uce');
+    if (!fs.existsSync(uceDir)) {
+      fs.mkdirSync(uceDir, { recursive: true });
+    }
+
+    // Spawn detached watch process
+    const out = fs.openSync(logFile, 'a');
+    const err = fs.openSync(logFile, 'a');
+
+    const child = spawn('npx', ['universal-context-engine', 'watch', '-p', projectRoot], {
+      detached: true,
+      stdio: ['ignore', out, err],
+      cwd: projectRoot,
+    });
+
+    child.unref();
+
+    // Save PID
+    fs.writeFileSync(pidFile, String(child.pid));
+
+    console.log(`✅ UCE daemon started (PID: ${child.pid})`);
+    console.log(`   Log file: ${logFile}`);
+    console.log('   UCE.md will auto-update on file changes');
+    console.log('\n   To stop: npx universal-context-engine daemon --stop');
+    console.log('   To check: npx universal-context-engine daemon --status');
   });
 
 // ============================================================================

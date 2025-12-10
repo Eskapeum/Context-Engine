@@ -39,8 +39,9 @@ npx universal-context-engine init
 
 > **Note:** Use `npx universal-context-engine` (not `npx uce`) because there's an unrelated npm package named `uce`. After installing globally with `npm install -g universal-context-engine`, you can use `uce` directly.
 
-## v2.3 Highlights
+## v2.4 Highlights
 
+- **🔄 Auto-Indexing** - Git pre-commit hook and background daemon for automatic UCE.md updates
 - **🔌 Auto-Install Integrations** - `uce install` command for one-click AI assistant setup
 - **Tree-sitter AST Parsing** - 20+ languages with accurate symbol extraction
 - **Incremental Indexing** - Only re-index changed files
@@ -141,6 +142,8 @@ npx uce watch
 | `uce clean` | Remove generated files |
 | `uce export` | Export index as JSON |
 | `uce diff` | Show changes since last index |
+| `uce hook` | Install git pre-commit hook for auto-indexing |
+| `uce daemon` | Start/stop background file watcher |
 
 ### Examples
 
@@ -168,6 +171,11 @@ npx universal-context-engine install                           # All assistants
 npx universal-context-engine install --assistant claude        # Claude Code only
 npx universal-context-engine install --assistant cursor        # Cursor IDE only
 npx universal-context-engine install --assistant claude --global  # Global Claude commands
+
+# Auto-indexing options
+npx universal-context-engine hook                 # Install git pre-commit hook
+npx universal-context-engine daemon               # Start background watcher
+npx universal-context-engine daemon --stop        # Stop background watcher
 ```
 
 ## Configuration

@@ -32,10 +32,12 @@ Universal Context Engine indexes your codebase and provides intelligent context 
 ```bash
 # Install and index your project
 npm install universal-context-engine
-npx uce init
+npx universal-context-engine init
 
 # That's it! Your codebase context is now in UCE.md
 ```
+
+> **Note:** Use `npx universal-context-engine` (not `npx uce`) because there's an unrelated npm package named `uce`. After installing globally with `npm install -g universal-context-engine`, you can use `uce` directly.
 
 ## v2.3 Highlights
 
@@ -161,11 +163,11 @@ npx uce serve --port 4000
 # Guided setup for new users
 npx uce hello
 
-# Auto-install AI assistant integrations
-npx uce install                           # All assistants
-npx uce install --assistant claude        # Claude Code only
-npx uce install --assistant cursor        # Cursor IDE only
-npx uce install --assistant claude --global  # Global Claude commands
+# Auto-install AI assistant integrations (use full package name with npx)
+npx universal-context-engine install                           # All assistants
+npx universal-context-engine install --assistant claude        # Claude Code only
+npx universal-context-engine install --assistant cursor        # Cursor IDE only
+npx universal-context-engine install --assistant claude --global  # Global Claude commands
 ```
 
 ## Configuration

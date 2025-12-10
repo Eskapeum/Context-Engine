@@ -12,8 +12,10 @@ npm install universal-context-engine
 npx uce init
 
 # Auto-install all AI assistant integrations
-npx uce install
+npx universal-context-engine install
 ```
+
+> **Note:** Use `npx universal-context-engine` (not `npx uce`) because there's an unrelated npm package named `uce`. After installing globally, you can use `uce` directly.
 
 ## Automatic Installation (Recommended)
 
@@ -21,17 +23,17 @@ UCE v2.3+ includes an `install` command that automatically sets up integrations:
 
 ```bash
 # Install all supported integrations
-npx uce install
+npx universal-context-engine install
 
 # Install specific assistant
-npx uce install --assistant claude      # Claude Code
-npx uce install --assistant cursor      # Cursor IDE
-npx uce install --assistant copilot     # GitHub Copilot
-npx uce install --assistant cline       # Cline
-npx uce install --assistant continue    # Continue
+npx universal-context-engine install --assistant claude      # Claude Code
+npx universal-context-engine install --assistant cursor      # Cursor IDE
+npx universal-context-engine install --assistant copilot     # GitHub Copilot
+npx universal-context-engine install --assistant cline       # Cline
+npx universal-context-engine install --assistant continue    # Continue
 
 # Install Claude commands globally (user home)
-npx uce install --assistant claude --global
+npx universal-context-engine install --assistant claude --global
 ```
 
 This creates the appropriate config files for each assistant automatically.

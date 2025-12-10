@@ -2,14 +2,14 @@
   <img src="assets/uce-logo.svg" width="200" alt="Universal Context Engine Logo">
 </p>
 
-<h1 align="center">Universal Context Engine (UCE) v2.0.1</h1>
+<h1 align="center">Universal Context Engine (UCE) v2.2</h1>
 
 <p align="center">
   <strong>The most intelligent context engine for AI coding assistants</strong>
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/universal-context-memory"><img src="https://img.shields.io/npm/v/universal-context-memory.svg?style=flat-square" alt="npm version"></a>
+  <a href="https://www.npmjs.com/package/universal-context-engine"><img src="https://img.shields.io/npm/v/universal-context-engine.svg?style=flat-square" alt="npm version"></a>
   <a href="https://github.com/Eskapeum/Context-Engine/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square" alt="License"></a>
   <a href="https://github.com/Eskapeum/Context-Engine/actions"><img src="https://img.shields.io/github/actions/workflow/status/Eskapeum/Context-Engine/ci.yml?style=flat-square" alt="CI Status"></a>
 </p>
@@ -31,13 +31,13 @@ Universal Context Engine indexes your codebase and provides intelligent context 
 
 ```bash
 # Install and index your project
-npm install universal-context-memory
+npm install universal-context-engine
 npx uce init
 
-# That's it! Claude Code, Cursor, and Copilot now understand your codebase
+# That's it! Your codebase context is now in UCE.md
 ```
 
-## v2.0 Highlights
+## v2.2 Highlights
 
 - **Tree-sitter AST Parsing** - 20+ languages with accurate symbol extraction
 - **Incremental Indexing** - Only re-index changed files
@@ -45,6 +45,7 @@ npx uce init
 - **Hybrid Retrieval** - BM25 + semantic search for best results
 - **MCP Server** - Direct integration with Claude Code and other AI tools
 - **Watch Mode** - Auto-update on file changes
+- **Single Universal Context File** - One UCE.md works with any AI assistant
 
 ## Features
 
@@ -56,7 +57,7 @@ npx uce init
 | **Incremental Index** | Fast updates - only re-parse changed files |
 | **MCP Server** | Model Context Protocol server for AI assistants |
 | **Watch Mode** | Real-time index updates on file changes |
-| **Multi-tool Output** | Claude Code, Cursor, Copilot, any LLM |
+| **Universal Output** | Single UCE.md file works with Claude, Cursor, Copilot, any LLM |
 | **100% Local** | No cloud, no uploads, complete privacy |
 
 ## Supported Languages
@@ -67,16 +68,16 @@ TypeScript, JavaScript, Python, Rust, Go, Java, C#, Ruby, PHP, Swift, Kotlin, Sc
 
 ```bash
 # npm
-npm install universal-context-memory
+npm install universal-context-engine
 
 # yarn
-yarn add universal-context-memory
+yarn add universal-context-engine
 
 # pnpm
-pnpm add universal-context-memory
+pnpm add universal-context-engine
 
 # global install
-npm install -g universal-context-memory
+npm install -g universal-context-engine
 ```
 
 See [INSTALLATION.md](INSTALLATION.md) for detailed setup instructions.
@@ -92,12 +93,8 @@ npx uce init
 Creates:
 ```
 your-project/
-├── .context/index.json      # Codebase index
-├── UCE.md                   # Universal context (any AI)
-├── CONTEXT.md               # Generic LLM context
-├── CLAUDE.md                # Claude Code specific
-├── .cursorrules             # Cursor IDE
-└── .github/copilot-instructions.md
+├── .uce/index.json      # Codebase index
+└── UCE.md               # Universal context file (works with any AI)
 ```
 
 ### 2. View Stats
@@ -123,7 +120,9 @@ npx uce watch
 | Command | Description |
 |---------|-------------|
 | `uce init` | Initialize UCE in a project |
+| `uce hello` | Guided onboarding for new users |
 | `uce index` | Re-index the codebase |
+| `uce generate` | Regenerate UCE.md from existing index |
 | `uce watch` | Watch for changes and auto-update |
 | `uce stats` | Show index statistics |
 | `uce search <query>` | Search codebase with BM25 |
@@ -137,6 +136,7 @@ npx uce watch
 | `uce info` | Show version and system info |
 | `uce clean` | Remove generated files |
 | `uce export` | Export index as JSON |
+| `uce diff` | Show changes since last index |
 
 ### Examples
 
@@ -155,6 +155,9 @@ npx uce graph --format mermaid > architecture.md
 
 # Start MCP server on custom port
 npx uce serve --port 4000
+
+# Guided setup for new users
+npx uce hello
 ```
 
 ## Configuration
@@ -169,11 +172,7 @@ Create `.ucerc.json`:
   "maxTokens": 50000,
   "enableEmbeddings": false,
   "output": {
-    "uceMd": true,
-    "contextMd": true,
-    "claudeMd": true,
-    "cursorRules": true,
-    "copilotInstructions": true
+    "uceMd": true
   }
 }
 ```
@@ -188,7 +187,7 @@ npx uce config --init
 ### Context Engine
 
 ```typescript
-import { ContextEngine } from 'universal-context-memory';
+import { ContextEngine } from 'universal-context-engine';
 
 const engine = new ContextEngine({
   projectRoot: '/path/to/project',
@@ -213,7 +212,7 @@ const deps = engine.getDependencies('src/auth.ts');
 ### Legacy API (v1.x compatible)
 
 ```typescript
-import { Indexer, ContextGenerator, indexProject } from 'universal-context-memory';
+import { Indexer, ContextGenerator, indexProject } from 'universal-context-engine';
 
 // Quick one-liner
 await indexProject('/path/to/project');
@@ -268,7 +267,7 @@ Add to your MCP configuration:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  Universal Context Engine v2.0 Architecture                  │
+│  Universal Context Engine v2.2 Architecture                  │
 ├─────────────────────────────────────────────────────────────┤
 │                                                              │
 │  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐   │
@@ -285,7 +284,7 @@ Add to your MCP configuration:
 │         ▼                                                    │
 │  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐   │
 │  │ MCP Server   │    │  Generator   │    │    Watch     │   │
-│  │              │    │  (MD files)  │    │    Mode      │   │
+│  │              │    │  (UCE.md)    │    │    Mode      │   │
 │  └──────────────┘    └──────────────┘    └──────────────┘   │
 │                                                              │
 └─────────────────────────────────────────────────────────────┘

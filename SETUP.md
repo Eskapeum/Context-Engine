@@ -1,12 +1,12 @@
 # GitHub Repository Setup Guide
 
-Quick guide to publish Universal Context Memory (UCE) to GitHub.
+Quick guide to publish Universal Context Engine (UCE) to GitHub and npm.
 
 ## Step 1: Create GitHub Repository
 
 1. Go to https://github.com/new
-2. Repository name: `universal-context-memory`
-3. Description: `Auto-indexing memory for AI coding assistants - baked into your project`
+2. Repository name: `Context-Engine`
+3. Description: `Universal Context Engine - Live context intelligence for AI coding assistants`
 4. Set to **Public**
 5. **Do NOT** initialize with README (we have our own)
 6. Click "Create repository"
@@ -14,27 +14,26 @@ Quick guide to publish Universal Context Memory (UCE) to GitHub.
 ## Step 2: Push Code to GitHub
 
 ```bash
-# Extract the package
-tar -xzf uce-opensource.tar.gz
-cd uce-opensource
+# Clone or navigate to your project
+cd Context-Engine
 
 # Initialize git and push
 git init
 git add .
-git commit -m "Initial release: Universal Context Memory v1.0.0"
+git commit -m "Initial release: Universal Context Engine v2.2.1"
 git branch -M main
-git remote add origin https://github.com/LyceumAI/universal-context-memory.git
+git remote add origin https://github.com/Eskapeum/Context-Engine.git
 git push -u origin main
 
-# Create and push initial tag
-git tag -a v1.0.0 -m "Release v1.0.0"
-git push origin v1.0.0
+# Create and push version tag
+git tag -a v2.2.1 -m "Release v2.2.1"
+git push origin v2.2.1
 ```
 
 ## Step 3: Configure Repository Settings
 
 ### General Settings
-- Add description and topics: `ai`, `context`, `llm`, `claude`, `cursor`, `copilot`, `developer-tools`
+- Add description and topics: `ai`, `context`, `llm`, `claude`, `cursor`, `copilot`, `developer-tools`, `uce`, `mcp`
 - Enable Issues and Discussions
 - Add website URL (if you have one)
 
@@ -53,15 +52,16 @@ Add these secrets for CI/CD:
 # Login to npm
 npm login
 
-# Publish
+# Build and publish
+npm run build
 npm publish
 ```
 
 ## Step 5: Create GitHub Release
 
 1. Go to Releases → Create a new release
-2. Tag: `v1.0.0`
-3. Title: `Universal Context Memory v1.0.0`
+2. Tag: `v2.2.1`
+3. Title: `Universal Context Engine v2.2.1`
 4. Generate release notes or paste from CHANGELOG.md
 5. Publish release
 
@@ -69,31 +69,42 @@ npm publish
 
 - [ ] Repository created on GitHub
 - [ ] Code pushed to `main` branch
-- [ ] Initial tag `v1.0.0` created
+- [ ] Version tag created
 - [ ] Branch protection enabled
 - [ ] NPM_TOKEN secret added
-- [ ] Package published to npm
+- [ ] Package published to npm as `universal-context-engine`
 - [ ] First GitHub Release created
 - [ ] Topics/tags added to repo
-- [ ] Discord/community links updated in README
-
-## Updating the README
-
-Update these placeholders in README.md:
-- Replace `LyceumAI` with your actual GitHub username/org
-- Update Discord invite link
-- Update Twitter handle
-- Update email address
 
 ## Testing After Publish
 
 ```bash
 # Test npm install works
-npm install universal-context-memory
+npm install universal-context-engine
 
 # Test CLI works
+npx uce hello
+
+# Test indexing
 npx uce init
 ```
+
+## What Gets Generated
+
+After running `npx uce init`, you'll have:
+
+```
+your-project/
+├── .uce/
+│   └── index.json      # Codebase index (don't commit)
+└── UCE.md              # Universal context file (commit this!)
+```
+
+**UCE.md** is the single universal context file that works with:
+- Claude Code
+- Cursor IDE
+- GitHub Copilot
+- Any LLM or AI assistant
 
 ---
 

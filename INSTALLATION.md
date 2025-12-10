@@ -1,6 +1,6 @@
 # Installation Guide
 
-Complete installation and setup guide for Universal Context Engine (UCE) v2.0.
+Complete installation and setup guide for Universal Context Engine (UCE) v2.2.
 
 ## Table of Contents
 
@@ -24,22 +24,22 @@ Complete installation and setup guide for Universal Context Engine (UCE) v2.0.
 
 ```bash
 # Install in your project
-npm install universal-context-memory
+npm install universal-context-engine
 
 # Or install globally
-npm install -g universal-context-memory
+npm install -g universal-context-engine
 ```
 
 ### Yarn
 
 ```bash
-yarn add universal-context-memory
+yarn add universal-context-engine
 ```
 
 ### PNPM
 
 ```bash
-pnpm add universal-context-memory
+pnpm add universal-context-engine
 ```
 
 ### From Source
@@ -69,12 +69,8 @@ npx uce init
 ```
 
 This creates:
-- `.context/index.json` - Full codebase index
-- `UCE.md` - Universal context (any AI)
-- `CONTEXT.md` - Generic LLM context
-- `CLAUDE.md` - Claude Code specific
-- `.cursorrules` - Cursor IDE rules
-- `.github/copilot-instructions.md` - GitHub Copilot
+- `.uce/index.json` - Full codebase index
+- `UCE.md` - Universal context file (works with any AI)
 
 ### 2. Verify Installation
 
@@ -110,11 +106,7 @@ Create `.ucerc.json` in your project root:
   "maxTokens": 50000,
   "enableEmbeddings": false,
   "output": {
-    "uceMd": true,
-    "contextMd": true,
-    "claudeMd": true,
-    "cursorRules": true,
-    "copilotInstructions": true
+    "uceMd": true
   },
   "watch": {
     "debounceMs": 500
@@ -131,15 +123,13 @@ Create `.ucerc.json` in your project root:
 Create `uce.config.js`:
 
 ```javascript
-/** @type {import('universal-context-memory').UCEConfig} */
+/** @type {import('universal-context-engine').UCEConfig} */
 export default {
   projectName: 'my-project',
   ignore: ['**/dist/**'],
   enableEmbeddings: false,
   output: {
     uceMd: true,
-    contextMd: true,
-    claudeMd: true,
   },
 };
 ```
@@ -153,11 +143,7 @@ export default {
 | `priorityFiles` | string[] | [] | Files to prioritize in context |
 | `maxTokens` | number | 50000 | Maximum tokens for context output |
 | `enableEmbeddings` | boolean | false | Enable semantic embeddings |
-| `output.uceMd` | boolean | true | Generate UCE.md (universal) |
-| `output.contextMd` | boolean | true | Generate CONTEXT.md |
-| `output.claudeMd` | boolean | true | Generate CLAUDE.md |
-| `output.cursorRules` | boolean | true | Generate .cursorrules |
-| `output.copilotInstructions` | boolean | true | Generate copilot-instructions.md |
+| `output.uceMd` | boolean | true | Generate UCE.md |
 | `watch.debounceMs` | number | 500 | Debounce delay for watch mode |
 | `chunking.targetTokens` | number | 500 | Target tokens per chunk |
 | `chunking.maxTokens` | number | 1000 | Maximum tokens per chunk |
@@ -216,26 +202,35 @@ Add to your Claude Code MCP configuration:
 
 ### Claude Code
 
-UCE automatically generates `CLAUDE.md` which Claude Code reads on startup.
+UCE generates `UCE.md` which provides universal context. You can also use the MCP server for direct integration.
 
 ### Cursor IDE
 
-UCE generates `.cursorrules` which Cursor automatically loads.
+Copy or symlink `UCE.md` to `.cursorrules` if you want Cursor to pick it up:
+
+```bash
+cp UCE.md .cursorrules
+```
 
 ### GitHub Copilot
 
-UCE generates `.github/copilot-instructions.md` which Copilot uses for context.
+Copy `UCE.md` content to `.github/copilot-instructions.md`:
+
+```bash
+mkdir -p .github
+cp UCE.md .github/copilot-instructions.md
+```
 
 ### VS Code
 
-Install the UCE extension (coming soon) or use the MCP server integration.
+Use the MCP server integration or reference `UCE.md` in your workflow.
 
 ## Programmatic Usage
 
 ### Basic Indexing
 
 ```typescript
-import { Indexer, ContextGenerator } from 'universal-context-memory';
+import { Indexer, ContextGenerator } from 'universal-context-engine';
 
 const indexer = new Indexer({ projectRoot: '/path/to/project' });
 const index = await indexer.index();
@@ -244,10 +239,10 @@ const generator = new ContextGenerator({ projectRoot: '/path/to/project', index 
 generator.generateAll();
 ```
 
-### Context Engine (v2.0)
+### Context Engine (v2.x)
 
 ```typescript
-import { ContextEngine } from 'universal-context-memory';
+import { ContextEngine } from 'universal-context-engine';
 
 const engine = new ContextEngine({
   projectRoot: '/path/to/project',
@@ -272,7 +267,7 @@ const related = engine.findRelated('AuthService');
 ### Knowledge Graph
 
 ```typescript
-import { ContextEngine } from 'universal-context-memory';
+import { ContextEngine } from 'universal-context-engine';
 
 const engine = new ContextEngine({ projectRoot: '/path/to/project' });
 await engine.initialize();
@@ -309,10 +304,10 @@ npm install
 
 ```bash
 # Force re-index
-npx uce index --force
+npx uce index
 
 # Or clear cache
-rm -rf .context .uce
+rm -rf .uce
 npx uce init
 ```
 
@@ -340,12 +335,11 @@ DEBUG=uce:* npx uce index
 ### Getting Help
 
 - **GitHub Issues**: [Report a bug](https://github.com/Eskapeum/Context-Engine/issues)
-- **Discord**: [Join our community](https://discord.gg/lyceumacademy)
 - **Documentation**: [Full docs](https://github.com/Eskapeum/Context-Engine#readme)
 
 ## Next Steps
 
-1. **Commit context files** to share with your team
+1. **Commit UCE.md** to share context with your team
 2. **Enable watch mode** for automatic updates
 3. **Configure MCP server** for direct AI integration
 4. **Customize ignore patterns** for your project

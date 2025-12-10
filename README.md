@@ -2,7 +2,7 @@
   <img src="assets/uce-logo.svg" width="200" alt="Universal Context Engine Logo">
 </p>
 
-<h1 align="center">Universal Context Engine (UCE) v2.2</h1>
+<h1 align="center">Universal Context Engine (UCE) v2.3</h1>
 
 <p align="center">
   <strong>The most intelligent context engine for AI coding assistants</strong>
@@ -37,8 +37,9 @@ npx uce init
 # That's it! Your codebase context is now in UCE.md
 ```
 
-## v2.2 Highlights
+## v2.3 Highlights
 
+- **🔌 Auto-Install Integrations** - `uce install` command for one-click AI assistant setup
 - **Tree-sitter AST Parsing** - 20+ languages with accurate symbol extraction
 - **Incremental Indexing** - Only re-index changed files
 - **Knowledge Graph** - Navigate code relationships (callers, inheritance, dependencies)
@@ -120,6 +121,7 @@ npx uce watch
 | Command | Description |
 |---------|-------------|
 | `uce init` | Initialize UCE in a project |
+| `uce install` | Auto-install AI assistant integrations |
 | `uce hello` | Guided onboarding for new users |
 | `uce index` | Re-index the codebase |
 | `uce generate` | Regenerate UCE.md from existing index |
@@ -158,6 +160,12 @@ npx uce serve --port 4000
 
 # Guided setup for new users
 npx uce hello
+
+# Auto-install AI assistant integrations
+npx uce install                           # All assistants
+npx uce install --assistant claude        # Claude Code only
+npx uce install --assistant cursor        # Cursor IDE only
+npx uce install --assistant claude --global  # Global Claude commands
 ```
 
 ## Configuration

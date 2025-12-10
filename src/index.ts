@@ -1,5 +1,5 @@
 /**
- * Universal Context Engine (UCE) v2.2
+ * Universal Context Engine (UCE) v2.3
  *
  * The most intelligent context engine for AI coding assistants.
  *
@@ -242,7 +242,7 @@ export async function startMCPServer(
 /**
  * Version of the UCE package.
  */
-export const VERSION = '2.2.1';
+export const VERSION = '2.3.0';
 
 // Default export for convenience
 export default {

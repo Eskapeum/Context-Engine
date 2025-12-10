@@ -1,12 +1,12 @@
 # Universal Context Engine (UCE) Commands
 # Compatible with any AI coding assistant
-# Version: 2.2.1
+# Version: 2.3.0
 
 name: Universal Context Engine
 description: Live context intelligence for AI coding assistants
 package: universal-context-engine
 binary: uce
-version: 2.2.1
+version: 2.3.0
 
 # Installation
 install:

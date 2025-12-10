@@ -17,7 +17,7 @@ import { loadConfig, validateConfig, generateDefaultConfig, type UCEConfig } fro
 import * as fs from 'fs';
 import * as path from 'path';
 
-const VERSION = '2.2.1';
+const VERSION = '2.3.0';
 
 const program = new Command();
 
@@ -1059,6 +1059,264 @@ program
     console.log('  uce serve                          # Start MCP server for AI tools');
 
     console.log('\n📚 Learn more: https://github.com/Eskapeum/Context-Engine\n');
+  });
+
+// ============================================================================
+// VERSION INFO
+// ============================================================================
+
+// ============================================================================
+// INSTALL COMMAND (AI Assistant Integrations)
+// ============================================================================
+
+program
+  .command('install')
+  .description('Install UCE integrations for AI coding assistants')
+  .option('-a, --assistant <name>', 'Specific assistant: claude, cursor, copilot, cline, continue, all')
+  .option('-p, --path <path>', 'Project path', process.cwd())
+  .option('-g, --global', 'Install to user home directory (for Claude Code)')
+  .option('-y, --yes', 'Auto-confirm installation')
+  .action(async (options) => {
+    const projectRoot = path.resolve(options.path);
+    const homeDir = process.env.HOME || process.env.USERPROFILE || '';
+
+    console.log('\n🔌 UCE AI Assistant Integration Installer\n');
+
+    const assistants = options.assistant?.toLowerCase() || 'all';
+    const installed: string[] = [];
+    const skipped: string[] = [];
+
+    // Helper to create directories
+    const ensureDir = (dir: string) => {
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+    };
+
+    // Claude Code slash commands
+    if (assistants === 'all' || assistants === 'claude') {
+      const claudeDir = options.global
+        ? path.join(homeDir, '.claude', 'commands', 'uce')
+        : path.join(projectRoot, '.claude', 'commands', 'uce');
+
+      try {
+        ensureDir(claudeDir);
+
+        // Create slash command files
+        const commands = [
+          { name: 'init', desc: 'Initialize UCE', cmd: 'npx uce init' },
+          { name: 'index', desc: 'Re-index codebase', cmd: 'npx uce index' },
+          { name: 'search', desc: 'Search codebase', cmd: 'npx uce search "$ARGUMENTS"', args: true },
+          { name: 'query', desc: 'Query symbols', cmd: 'npx uce query "$ARGUMENTS"', args: true },
+          { name: 'callers', desc: 'Find callers', cmd: 'npx uce callers "$ARGUMENTS"', args: true },
+          { name: 'related', desc: 'Find related', cmd: 'npx uce related "$ARGUMENTS"', args: true },
+          { name: 'inheritance', desc: 'Class hierarchy', cmd: 'npx uce inheritance "$ARGUMENTS"', args: true },
+          { name: 'graph', desc: 'Export graph', cmd: 'npx uce graph --format mermaid' },
+          { name: 'stats', desc: 'Show stats', cmd: 'npx uce stats' },
+          { name: 'watch', desc: 'Watch mode', cmd: 'npx uce watch' },
+          { name: 'diff', desc: 'Show changes', cmd: 'npx uce diff' },
+          { name: 'serve', desc: 'Start MCP', cmd: 'npx uce serve' },
+        ];
+
+        for (const cmd of commands) {
+          const content = `# UCE ${cmd.name.charAt(0).toUpperCase() + cmd.name.slice(1)}
+
+${cmd.desc}
+
+Run the following command${cmd.args ? ' with your arguments' : ''}:
+
+\`\`\`bash
+${cmd.cmd}
+\`\`\`
+`;
+          fs.writeFileSync(path.join(claudeDir, `${cmd.name}.md`), content);
+        }
+
+        installed.push(`Claude Code (${claudeDir})`);
+        console.log(`✅ Claude Code: Installed ${commands.length} slash commands`);
+        console.log(`   Location: ${claudeDir}`);
+        console.log('   Usage: /uce:init, /uce:search, /uce:callers, etc.\n');
+      } catch (err) {
+        skipped.push(`Claude Code: ${err}`);
+      }
+    }
+
+    // Cursor IDE
+    if (assistants === 'all' || assistants === 'cursor') {
+      const cursorFile = path.join(projectRoot, '.cursorrules');
+
+      try {
+        // Check if UCE.md exists
+        const uceMdPath = path.join(projectRoot, 'UCE.md');
+        if (fs.existsSync(uceMdPath)) {
+          // Append UCE commands to existing or create new
+          const uceContent = fs.readFileSync(uceMdPath, 'utf-8');
+          const cursorHeader = `# UCE Commands for Cursor
+
+Available commands:
+- \`npx uce search "<query>"\` - Search codebase
+- \`npx uce callers <fn>\` - Find callers
+- \`npx uce related <symbol>\` - Find related
+- \`npx uce index\` - Re-index
+
+---
+
+`;
+          fs.writeFileSync(cursorFile, cursorHeader + uceContent);
+          installed.push('Cursor IDE (.cursorrules)');
+          console.log('✅ Cursor IDE: Created .cursorrules from UCE.md');
+          console.log(`   Location: ${cursorFile}\n`);
+        } else {
+          // Create basic cursorrules
+          const basicRules = `# UCE - Universal Context Engine
+
+Run these commands for better context:
+
+\`\`\`bash
+npx uce search "<query>"   # Search codebase
+npx uce callers <function> # Find callers
+npx uce related <symbol>   # Find related
+npx uce index              # Re-index
+npx uce stats              # Show stats
+\`\`\`
+
+Run \`npx uce init\` to generate UCE.md with full project context.
+`;
+          fs.writeFileSync(cursorFile, basicRules);
+          installed.push('Cursor IDE (.cursorrules)');
+          console.log('✅ Cursor IDE: Created .cursorrules');
+          console.log(`   Location: ${cursorFile}\n`);
+        }
+      } catch (err) {
+        skipped.push(`Cursor: ${err}`);
+      }
+    }
+
+    // GitHub Copilot
+    if (assistants === 'all' || assistants === 'copilot') {
+      const copilotDir = path.join(projectRoot, '.github');
+      const copilotFile = path.join(copilotDir, 'copilot-instructions.md');
+
+      try {
+        ensureDir(copilotDir);
+
+        const uceMdPath = path.join(projectRoot, 'UCE.md');
+        if (fs.existsSync(uceMdPath)) {
+          const uceContent = fs.readFileSync(uceMdPath, 'utf-8');
+          const copilotHeader = `# UCE Context for GitHub Copilot
+
+Use these commands for better assistance:
+- \`npx uce search "<query>"\` - Search codebase
+- \`npx uce callers <fn>\` - Find function callers
+- \`npx uce related <symbol>\` - Find related code
+
+---
+
+`;
+          fs.writeFileSync(copilotFile, copilotHeader + uceContent);
+        } else {
+          const basicInstructions = `# UCE - Universal Context Engine
+
+This project uses UCE for codebase indexing.
+
+Available commands:
+- \`npx uce init\` - Initialize UCE
+- \`npx uce search "<query>"\` - Search codebase
+- \`npx uce callers <function>\` - Find callers
+- \`npx uce related <symbol>\` - Find related
+- \`npx uce index\` - Re-index codebase
+
+Run \`npx uce init\` to generate UCE.md with full project context.
+`;
+          fs.writeFileSync(copilotFile, basicInstructions);
+        }
+
+        installed.push('GitHub Copilot (.github/copilot-instructions.md)');
+        console.log('✅ GitHub Copilot: Created copilot-instructions.md');
+        console.log(`   Location: ${copilotFile}\n`);
+      } catch (err) {
+        skipped.push(`Copilot: ${err}`);
+      }
+    }
+
+    // Cline
+    if (assistants === 'all' || assistants === 'cline') {
+      const clineDir = path.join(projectRoot, '.cline');
+      const clineFile = path.join(clineDir, 'uce-commands.json');
+
+      try {
+        ensureDir(clineDir);
+
+        const clineConfig = {
+          name: 'UCE Commands',
+          version: VERSION,
+          commands: [
+            { name: 'uce-init', command: 'npx uce init', description: 'Initialize UCE' },
+            { name: 'uce-index', command: 'npx uce index', description: 'Re-index codebase' },
+            { name: 'uce-search', command: 'npx uce search', description: 'Search codebase', args: ['query'] },
+            { name: 'uce-callers', command: 'npx uce callers', description: 'Find callers', args: ['function'] },
+            { name: 'uce-related', command: 'npx uce related', description: 'Find related', args: ['symbol'] },
+            { name: 'uce-stats', command: 'npx uce stats', description: 'Show statistics' },
+          ],
+        };
+
+        fs.writeFileSync(clineFile, JSON.stringify(clineConfig, null, 2));
+        installed.push('Cline (.cline/uce-commands.json)');
+        console.log('✅ Cline: Created uce-commands.json');
+        console.log(`   Location: ${clineFile}\n`);
+      } catch (err) {
+        skipped.push(`Cline: ${err}`);
+      }
+    }
+
+    // Continue
+    if (assistants === 'all' || assistants === 'continue') {
+      const continueDir = path.join(projectRoot, '.continue');
+      const continueFile = path.join(continueDir, 'uce-config.json');
+
+      try {
+        ensureDir(continueDir);
+
+        const continueConfig = {
+          name: 'UCE',
+          version: VERSION,
+          contextProviders: [
+            { name: 'uce', params: { file: 'UCE.md' } },
+          ],
+          slashCommands: [
+            { name: 'uce-search', command: 'npx uce search "{{input}}"' },
+            { name: 'uce-callers', command: 'npx uce callers {{input}}' },
+            { name: 'uce-index', command: 'npx uce index' },
+          ],
+        };
+
+        fs.writeFileSync(continueFile, JSON.stringify(continueConfig, null, 2));
+        installed.push('Continue (.continue/uce-config.json)');
+        console.log('✅ Continue: Created uce-config.json');
+        console.log(`   Location: ${continueFile}\n`);
+      } catch (err) {
+        skipped.push(`Continue: ${err}`);
+      }
+    }
+
+    // Summary
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log(`\n📦 Installation Summary:\n`);
+
+    if (installed.length > 0) {
+      console.log('Installed:');
+      installed.forEach(i => console.log(`  ✅ ${i}`));
+    }
+
+    if (skipped.length > 0) {
+      console.log('\nSkipped:');
+      skipped.forEach(s => console.log(`  ⚠️  ${s}`));
+    }
+
+    console.log('\n💡 Tips:');
+    console.log('  • Run `npx uce init` to generate UCE.md context file');
+    console.log('  • Run `npx uce install --assistant claude --global` for global Claude commands');
+    console.log('  • Commit generated files to share with your team\n');
   });
 
 // ============================================================================

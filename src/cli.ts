@@ -12,12 +12,13 @@ import { Indexer } from './indexer.js';
 import { ContextGenerator } from './generator.js';
 import { ContextEngine } from './context-engine.js';
 import { FileWatcher } from './core/watcher.js';
+import { IncrementalIndexer } from './core/incremental-indexer.js';
 import { KnowledgeGraph, GraphBuilder } from './graph/index.js';
 import { loadConfig, validateConfig, generateDefaultConfig, type UCEConfig } from './config.js';
 import * as fs from 'fs';
 import * as path from 'path';
 
-const VERSION = '2.5.0';
+const VERSION = '3.5.1';
 
 const program = new Command();
 
@@ -187,7 +188,11 @@ program
 
     console.log(`👀 Watching ${projectRoot} for changes...\n`);
 
-    // Initial index
+    // Create IncrementalIndexer for FileWatcher (v3.5.1 fix)
+    const incrementalIndexer = new IncrementalIndexer({ projectRoot });
+    await incrementalIndexer.initialize();
+
+    // Also keep regular Indexer for generating context files
     const indexer = new Indexer({ projectRoot });
     let index = await indexer.index();
     await indexer.saveIndex(index);
@@ -199,42 +204,39 @@ program
 
     console.log(`✅ Initial index: ${index.totalFiles} files, ${index.totalSymbols} symbols\n`);
 
-    // Use our FileWatcher with smart dependency tracking
-    const watcher = new FileWatcher(projectRoot, {
+    // Use FileWatcher with correct constructor signature (v3.5.1 fix)
+    const watcher = new FileWatcher(incrementalIndexer, {
       debounceMs,
-      ignored: [
-        '**/node_modules/**',
-        '**/.git/**',
-        '**/dist/**',
-        '**/build/**',
-        '**/.context/**',
-        '**/.uce/**',
-        '**/CONTEXT.md',
-        '**/CLAUDE.md',
-        '**/.cursorrules',
-        '**/.github/copilot-instructions.md',
+      ignore: [
+        'node_modules',
+        '.git',
+        'dist',
+        'build',
+        '.context',
+        '.uce',
+        'CONTEXT.md',
+        'CLAUDE.md',
+        '.cursorrules',
       ],
+      initialIndex: false, // We already indexed above
     });
 
-    watcher.on('change', async (event) => {
-      const { filePath, type, affectedFiles } = event;
-      const relativePath = path.relative(projectRoot, filePath);
+    // Listen for correct events (v3.5.1 fix)
+    watcher.on('indexed', async (event) => {
+      if (event.initial) return; // Skip initial index event
 
-      if (type === 'add') {
-        console.log(`➕ Added: ${relativePath}`);
-      } else if (type === 'change') {
-        console.log(`📝 Changed: ${relativePath}`);
-      } else if (type === 'unlink') {
-        console.log(`➖ Removed: ${relativePath}`);
-      }
+      const changedFiles = event.changedFiles || 0;
+      const affectedFiles = event.affectedFiles || 0;
 
-      if (affectedFiles.length > 1) {
-        console.log(`   → ${affectedFiles.length - 1} dependent files affected`);
+      console.log(`📝 Detected ${changedFiles} changed file(s)`);
+      if (affectedFiles > changedFiles) {
+        console.log(`   → ${affectedFiles - changedFiles} dependent files affected`);
       }
 
       console.log('🔄 Reindexing...');
       const startTime = Date.now();
 
+      // Re-index with regular indexer for context generation
       index = await indexer.index();
       await indexer.saveIndex(index);
 
@@ -247,7 +249,11 @@ program
       console.log(`✅ Updated in ${elapsed}s (${index.totalFiles} files)\n`);
     });
 
-    watcher.start();
+    watcher.on('error', (err) => {
+      console.error('❌ Watch error:', err.error?.message || err);
+    });
+
+    await watcher.start(projectRoot);
     console.log('Press Ctrl+C to stop watching.\n');
 
     // Handle graceful shutdown

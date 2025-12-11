@@ -16,6 +16,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Nothing yet
 
+## [3.5.1] - 2025-12-11
+
+### Fixed
+- **Critical: Daemon/Watch Command Crash** - Fixed crash bug preventing `uce watch` and `uce daemon` from working
+  - Fixed FileWatcher constructor call: was passing `projectRoot` (string) instead of `IncrementalIndexer` instance
+  - Fixed config key: changed `ignored:` to `ignore:` to match WatcherConfig interface
+  - Fixed event listener: changed from non-existent `'change'` event to correct `'indexed'` event
+  - Added `'error'` event listener for proper error handling
+  - Background daemon now works correctly, watching files and auto-updating UCE.md on save
+
+### Technical Details
+- Added `IncrementalIndexer` import to CLI
+- FileWatcher now receives properly initialized indexer with `initialIndex: false` to avoid double-indexing
+- Event handlers now properly process `indexed` events with `changedFiles` and `affectedFiles` counts
+- All 85 tests passing
+
 ## [3.5.0] - 2025-12-10
 
 ### Added

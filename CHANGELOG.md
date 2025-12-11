@@ -16,6 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Nothing yet
 
+## [3.5.2] - 2025-12-11
+
+### Changed
+- Updated author email to tobi@lyceumaiacademy.com
+- Updated documentation version references
+
 ## [3.5.1] - 2025-12-11
 
 ### Fixed

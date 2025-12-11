@@ -2,7 +2,7 @@
   <img src="assets/uce-logo.svg" width="200" alt="Universal Context Engine Logo">
 </p>
 
-<h1 align="center">Universal Context Engine (UCE) v3.5.1</h1>
+<h1 align="center">Universal Context Engine (UCE) v3.5.2</h1>
 
 <p align="center">
   <strong>The most intelligent context engine for AI coding assistants</strong>

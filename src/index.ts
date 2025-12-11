@@ -78,6 +78,15 @@ export type {
 export { FileWatcher } from './core/watcher.js';
 export type { WatcherConfig, FileChangeEvent, WatcherStats } from './core/watcher.js';
 
+// Parallel indexing (v3.5+)
+export { ParallelIndexer, createParallelIndexer } from './core/parallel-indexer.js';
+export type {
+  ParallelIndexerConfig,
+  IndexingTask,
+  IndexingResult,
+  ProgressCallback,
+} from './core/parallel-indexer.js';
+
 // Retrieval module
 export {
   BM25Index,
@@ -155,6 +164,10 @@ export * from './qa/index.js';
 
 // Analytics module (v3.0+)
 export * from './analytics/index.js';
+
+// Interactive CLI (v3.3+)
+export { InteractiveCLI, startInteractiveCLI } from './cli/interactive.js';
+export type { InteractiveCLIConfig } from './cli/interactive.js';
 
 // MCP Server
 export { MCPServer } from './mcp/server.js';
@@ -254,7 +267,7 @@ export async function startMCPServer(
 /**
  * Version of the UCE package.
  */
-export const VERSION = '3.0.0';
+export const VERSION = '3.5.0';
 
 // Default export for convenience
 export default {

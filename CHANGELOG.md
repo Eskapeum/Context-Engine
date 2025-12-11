@@ -16,6 +16,76 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Nothing yet
 
+## [3.5.0] - 2025-12-10
+
+### Added
+- **Parallel Indexing**: Multi-threaded indexing using worker threads for massive performance gains
+  - `ParallelIndexer` class for concurrent file processing
+  - Configurable worker pool size (defaults to CPU cores - 1)
+  - Progress callbacks for real-time indexing status
+  - Automatic batch splitting for optimal throughput
+- **Interactive CLI Mode**: REPL-style interface for codebase exploration
+  - `InteractiveCLI` class for interactive sessions
+  - Commands: `/search`, `/ask`, `/stats`, `/clear`, `/verbose`, `/quit`
+  - Natural language Q&A when enableQA is active
+  - Intelligent command and search handling
+- **Embedding Cache**: Persistent caching for embedding generation
+  - SHA-256 content hashing for cache invalidation
+  - LRU eviction policy with configurable max entries
+  - Memory and file-based caching options
+  - Cache statistics (hits, misses, hit rate)
+- **Batch Embedding Processor**: Efficient batch embedding with rate limiting
+  - Configurable batch sizes and concurrency control
+  - Automatic rate limiting to avoid API throttling
+  - Integration with embedding cache for performance
+  - Detailed batch processing statistics
+
+### Changed
+- Updated version from 3.0.0 to 3.5.0
+- Enhanced documentation with v3.5 features
+
+### Technical Details
+- New modules:
+  - `src/core/parallel-indexer.ts` - Worker thread-based parallel indexing
+  - `src/cli/interactive.ts` - Interactive REPL interface
+  - `src/embeddings/embedding-cache.ts` - Persistent embedding cache
+  - `src/embeddings/batch-processor.ts` - Batch embedding processor
+- All tests passing (85 tests)
+
+## [3.0.0] - 2025-12-10
+
+### Added
+- **Code Analytics & Intelligence**: Comprehensive code quality analysis
+  - `ComplexityAnalyzer` - Cyclomatic and cognitive complexity metrics
+  - `CodeSmellsDetector` - Pattern-based detection of maintainability issues
+  - `PatternDetector` - Architectural and design pattern recognition
+- **MCP Analytics Tools**: Three new Model Context Protocol tools
+  - `uce_analyze_complexity` - Analyze code complexity metrics
+  - `uce_detect_smells` - Detect code quality issues with severity levels
+  - `uce_detect_patterns` - Identify architectural and design patterns
+- **Enhanced Parser Types**: New types for analytics
+  - `ParsedFile` - Complete file structure with functions and classes
+  - `ParsedFunction` - Function metadata with parameters and return types
+  - `ParsedClass` - Class structure with methods and properties
+- **Analytics Configuration**: Configurable thresholds for all analyzers
+  - Long method detection (default: 50 lines)
+  - Long parameter list (default: 5 parameters)
+  - God class detection (default: 20 methods)
+  - Deep nesting (default: 4 levels)
+  - Complexity thresholds (low: 5, medium: 10, high: 20)
+
+### Changed
+- Updated version from 2.4.1 to 3.0.0
+- Enhanced MCP server with analytics integration
+- Updated documentation with v3.0 highlights
+
+### Technical Details
+- New modules:
+  - `src/analytics/complexity-analyzer.ts` - 340 lines
+  - `src/analytics/code-smells.ts` - 408 lines
+  - `src/analytics/pattern-detection.ts` - 694 lines
+- All tests passing (85 tests)
+
 ## [1.0.0] - 2024-12-06
 
 ### Added
@@ -68,6 +138,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| 3.5.0 | 2025-12-10 | Parallel indexing, interactive CLI, embedding cache, batch processor |
+| 3.0.0 | 2025-12-10 | Code analytics, complexity analysis, code smells detection, pattern recognition |
 | 1.0.0 | 2024-12-06 | Initial release |
 
 ## Migration Guides
@@ -78,5 +150,7 @@ This is the initial release, so no migration is needed.
 
 ---
 
-[Unreleased]: https://github.com/LyceumAI/universal-context-memory/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/LyceumAI/universal-context-memory/releases/tag/v1.0.0
+[Unreleased]: https://github.com/Eskapeum/Context-Engine/compare/v3.5.0...HEAD
+[3.5.0]: https://github.com/Eskapeum/Context-Engine/releases/tag/v3.5.0
+[3.0.0]: https://github.com/Eskapeum/Context-Engine/releases/tag/v3.0.0
+[1.0.0]: https://github.com/Eskapeum/Context-Engine/releases/tag/v1.0.0

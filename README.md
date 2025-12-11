@@ -2,7 +2,7 @@
   <img src="assets/uce-logo.svg" width="200" alt="Universal Context Engine Logo">
 </p>
 
-<h1 align="center">Universal Context Engine (UCE) v3.0</h1>
+<h1 align="center">Universal Context Engine (UCE) v3.5</h1>
 
 <p align="center">
   <strong>The most intelligent context engine for AI coding assistants</strong>
@@ -39,9 +39,15 @@ npx universal-context-engine init
 
 > **Note:** Use `npx universal-context-engine` (not `npx uce`) because there's an unrelated npm package named `uce`. After installing globally with `npm install -g universal-context-engine`, you can use `uce` directly.
 
-## v3.0 Highlights 🚀
+## v3.5 Highlights 🚀
 
-**New in v3.0 - Code Analytics & Intelligence:**
+**New in v3.5 - Production-Ready Features:**
+- **⚡ Parallel Indexing** - Multi-threaded indexing using worker threads for massive performance gains
+- **🎯 Interactive CLI Mode** - REPL-style interface for codebase exploration with `/search`, `/ask`, `/stats` commands
+- **💾 Embedding Cache** - Persistent caching with SHA-256 content hashing for 10x faster embedding generation
+- **📦 Batch Processor** - Efficient batch embedding with rate limiting and concurrency control
+
+**Previous Updates (v3.0 - Code Analytics):**
 - **📊 Complexity Analysis** - Cyclomatic & cognitive complexity metrics per function/file
 - **🔍 Code Smells Detection** - Identify long methods, god classes, duplicate code, deep nesting, magic numbers
 - **🏗️ Pattern Recognition** - Detect architectural (MVC, microservices) and design patterns (Singleton, Factory, Observer)

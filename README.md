@@ -2,7 +2,7 @@
   <img src="assets/uce-logo.svg" width="200" alt="Universal Context Engine Logo">
 </p>
 
-<h1 align="center">Universal Context Engine (UCE) v3.5</h1>
+<h1 align="center">Universal Context Engine (UCE) v3.5.1</h1>
 
 <p align="center">
   <strong>The most intelligent context engine for AI coding assistants</strong>
@@ -39,7 +39,10 @@ npx universal-context-engine init
 
 > **Note:** Use `npx universal-context-engine` (not `npx uce`) because there's an unrelated npm package named `uce`. After installing globally with `npm install -g universal-context-engine`, you can use `uce` directly.
 
-## v3.5 Highlights 🚀
+## v3.5.1 Highlights 🚀
+
+**Bugfix in v3.5.1:**
+- **🐛 Fixed Daemon/Watch Crash** - Critical fix for `uce watch` and `uce daemon` commands that were crashing on startup
 
 **New in v3.5 - Production-Ready Features:**
 - **⚡ Parallel Indexing** - Multi-threaded indexing using worker threads for massive performance gains

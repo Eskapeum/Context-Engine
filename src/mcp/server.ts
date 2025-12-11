@@ -14,6 +14,14 @@ import { FileWatcher } from '../core/watcher.js';
 import { KnowledgeGraph, GraphBuilder } from '../graph/index.js';
 import { BM25Index } from '../retrieval/bm25.js';
 import { QAEngine, type QAOptions, type QAResult } from '../qa/index.js';
+import {
+  ComplexityAnalyzer,
+  CodeSmellsDetector,
+  PatternDetector,
+  type ProjectComplexity,
+  type ProjectSmellReport,
+  type PatternDetectionResult,
+} from '../analytics/index.js';
 import type { Symbol, SemanticChunk } from '../parser/types.js';
 import type { EdgeType } from '../graph/knowledge-graph.js';
 
@@ -463,6 +471,79 @@ export class MCPServer {
           required: ['question'],
         },
       },
+      {
+        name: 'uce_analyze_complexity',
+        description:
+          'Analyze code complexity metrics including cyclomatic and cognitive complexity. Identifies functions and files with high complexity that may need refactoring.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            files: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'Specific files to analyze (optional, analyzes all if not specified)',
+            },
+            thresholds: {
+              type: 'object',
+              description: 'Custom complexity thresholds (optional)',
+              properties: {
+                low: { type: 'number' },
+                medium: { type: 'number' },
+                high: { type: 'number' },
+              },
+            },
+          },
+        },
+      },
+      {
+        name: 'uce_detect_smells',
+        description:
+          'Detect code smells such as long methods, god classes, duplicate code, deep nesting, and magic numbers. Returns detailed reports with severity levels and refactoring suggestions.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            files: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'Specific files to analyze (optional, analyzes all if not specified)',
+            },
+            severityFilter: {
+              type: 'string',
+              enum: ['low', 'medium', 'high', 'critical'],
+              description: 'Minimum severity level to report (default: all)',
+            },
+            thresholds: {
+              type: 'object',
+              description: 'Custom smell detection thresholds (optional)',
+              properties: {
+                longMethodLines: { type: 'number' },
+                longParameterCount: { type: 'number' },
+                godClassMethods: { type: 'number' },
+                deepNestingLevel: { type: 'number' },
+              },
+            },
+          },
+        },
+      },
+      {
+        name: 'uce_detect_patterns',
+        description:
+          'Detect architectural and design patterns in the codebase. Identifies patterns like MVC, microservices, singleton, factory, observer, REST APIs, authentication flows, etc.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            categories: {
+              type: 'array',
+              items: {
+                type: 'string',
+                enum: ['architectural', 'design', 'api', 'security', 'performance'],
+              },
+              description:
+                'Pattern categories to detect (optional, detects all if not specified)',
+            },
+          },
+        },
+      },
     ];
   }
 
@@ -547,6 +628,15 @@ export class MCPServer {
 
       case 'uce_ask':
         return this.handleAsk(args);
+
+      case 'uce_analyze_complexity':
+        return this.handleAnalyzeComplexity(args);
+
+      case 'uce_detect_smells':
+        return this.handleDetectSmells(args);
+
+      case 'uce_detect_patterns':
+        return this.handleDetectPatterns(args);
 
       default:
         throw new Error(`Unknown tool: ${name}`);
@@ -1288,6 +1378,131 @@ export class MCPServer {
     return qaEngine.ask(question, contextResult.context);
   }
 
+  private async handleAnalyzeComplexity(
+    args: Record<string, unknown>
+  ): Promise<ProjectComplexity> {
+    await this.indexer.initialize();
+    await this.indexer.index();
+
+    const filesFilter = args.files as string[] | undefined;
+    const thresholds = args.thresholds as
+      | { low?: number; medium?: number; high?: number }
+      | undefined;
+
+    // Create analyzer with custom thresholds if provided
+    const analyzer = new ComplexityAnalyzer(thresholds);
+
+    // Get all parsed files from index
+    const allFiles = this.convertIndexToParsedFiles();
+    const filesToAnalyze = filesFilter
+      ? allFiles.filter((f) => filesFilter.some((pattern) => f.path.includes(pattern)))
+      : allFiles;
+
+    // Analyze complexity
+    return analyzer.analyzeProject(filesToAnalyze);
+  }
+
+  private async handleDetectSmells(args: Record<string, unknown>): Promise<ProjectSmellReport> {
+    await this.indexer.initialize();
+    await this.indexer.index();
+
+    const filesFilter = args.files as string[] | undefined;
+    const severityFilter = args.severityFilter as 'low' | 'medium' | 'high' | 'critical' | undefined;
+    const thresholds = args.thresholds as
+      | {
+          longMethodLines?: number;
+          longParameterCount?: number;
+          godClassMethods?: number;
+          deepNestingLevel?: number;
+        }
+      | undefined;
+
+    // Create detector with custom thresholds if provided
+    const detector = new CodeSmellsDetector(thresholds);
+
+    // Get all parsed files from index
+    const allFiles = this.convertIndexToParsedFiles();
+    const filesToAnalyze = filesFilter
+      ? allFiles.filter((f) => filesFilter.some((pattern) => f.path.includes(pattern)))
+      : allFiles;
+
+    // Detect smells
+    const report = detector.analyzeProject(filesToAnalyze);
+
+    // Filter by severity if requested
+    if (severityFilter) {
+      const severityLevels: Record<string, number> = {
+        low: 0,
+        medium: 1,
+        high: 2,
+        critical: 3,
+      };
+      const minLevel = severityLevels[severityFilter];
+
+      for (const fileReport of report.files) {
+        fileReport.smells = fileReport.smells.filter(
+          (s) => severityLevels[s.severity] >= minLevel
+        );
+      }
+
+      report.criticalIssues = report.criticalIssues.filter(
+        (s) => severityLevels[s.severity] >= minLevel
+      );
+    }
+
+    return report;
+  }
+
+  private async handleDetectPatterns(
+    args: Record<string, unknown>
+  ): Promise<PatternDetectionResult> {
+    await this.indexer.initialize();
+    await this.indexer.index();
+
+    const categories = args.categories as
+      | ('architectural' | 'design' | 'api' | 'security' | 'performance')[]
+      | undefined;
+
+    // Create pattern detector
+    const detector = new PatternDetector();
+
+    // Get all parsed files from index
+    const allFiles = this.convertIndexToParsedFiles();
+
+    // Detect patterns
+    const result = detector.analyzeProject(allFiles);
+
+    // Filter by categories if requested
+    if (categories) {
+      const categorySet = new Set(categories);
+
+      if (!categorySet.has('design')) {
+        result.designPatterns = [];
+      }
+      if (!categorySet.has('api')) {
+        result.apiPatterns = [];
+      }
+      if (!categorySet.has('security')) {
+        result.securityPatterns = [];
+      }
+      if (!categorySet.has('performance')) {
+        result.performancePatterns = [];
+      }
+      if (!categorySet.has('architectural')) {
+        result.architecture = undefined;
+      }
+
+      // Recalculate total
+      result.totalPatterns =
+        result.designPatterns.length +
+        result.apiPatterns.length +
+        result.securityPatterns.length +
+        result.performancePatterns.length;
+    }
+
+    return result;
+  }
+
   private graphToDot(
     nodes: Array<{ id: string; name: string; type: string }>,
     edges: Array<{ source: string; target: string; type: string }>
@@ -1573,6 +1788,79 @@ export class MCPServer {
         resolve();
       }
     });
+  }
+
+  /**
+   * Convert project index to ParsedFile[] format for analytics
+   */
+  private convertIndexToParsedFiles(): import('../parser/types.js').ParsedFile[] {
+    const index = this.indexer.getIndex();
+    const parsedFiles: import('../parser/types.js').ParsedFile[] = [];
+
+    if (!index || !index.files) {
+      return parsedFiles;
+    }
+
+    for (const [filePath, fileIndex] of Object.entries(index.files)) {
+      // Read file content (if available)
+      let content = '';
+      try {
+        const fullPath = require('path').join(this.projectRoot, filePath);
+        content = require('fs').readFileSync(fullPath, 'utf-8');
+      } catch {
+        // Skip files that can't be read
+        continue;
+      }
+
+      // Extract functions from symbols
+      const functions = fileIndex.symbols
+        .filter((s: Symbol) => s.kind === 'function' || s.kind === 'method')
+        .map((s: Symbol) => ({
+          name: s.name,
+          startLine: s.line,
+          endLine: s.endLine,
+          parameters: s.parameters,
+          returnType: s.returnType,
+          async: s.async,
+          exported: s.exported,
+        }));
+
+      // Extract classes from symbols
+      const classSymbols = fileIndex.symbols.filter((s: Symbol) => s.kind === 'class');
+      const classes = classSymbols.map((cls: Symbol) => ({
+        name: cls.name,
+        startLine: cls.line,
+        endLine: cls.endLine,
+        methods: fileIndex.symbols
+          .filter((s: Symbol) => s.kind === 'method' && s.parent === cls.name)
+          .map((m: Symbol) => ({
+            name: m.name,
+            startLine: m.line,
+            endLine: m.endLine,
+            parameters: m.parameters,
+            returnType: m.returnType,
+            async: m.async,
+            exported: m.exported,
+          })),
+        properties: fileIndex.symbols.filter((s: Symbol) => s.kind === 'property' && s.parent === cls.name),
+        extends: cls.extends,
+        implements: cls.implements,
+        exported: cls.exported,
+      }));
+
+      parsedFiles.push({
+        path: filePath,
+        content,
+        language: fileIndex.metadata.language,
+        functions,
+        classes,
+        symbols: fileIndex.symbols,
+        imports: fileIndex.imports,
+        exports: fileIndex.exports,
+      });
+    }
+
+    return parsedFiles;
   }
 }
 

@@ -153,6 +153,9 @@ export * from './storage/index.js';
 // Q&A module (v2.6+)
 export * from './qa/index.js';
 
+// Analytics module (v3.0+)
+export * from './analytics/index.js';
+
 // MCP Server
 export { MCPServer } from './mcp/server.js';
 
@@ -251,7 +254,7 @@ export async function startMCPServer(
 /**
  * Version of the UCE package.
  */
-export const VERSION = '2.6.0';
+export const VERSION = '3.0.0';
 
 // Default export for convenience
 export default {

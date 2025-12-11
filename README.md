@@ -2,7 +2,7 @@
   <img src="assets/uce-logo.svg" width="200" alt="Universal Context Engine Logo">
 </p>
 
-<h1 align="center">Universal Context Engine (UCE) v2.6</h1>
+<h1 align="center">Universal Context Engine (UCE) v3.0</h1>
 
 <p align="center">
   <strong>The most intelligent context engine for AI coding assistants</strong>
@@ -39,14 +39,20 @@ npx universal-context-engine init
 
 > **Note:** Use `npx universal-context-engine` (not `npx uce`) because there's an unrelated npm package named `uce`. After installing globally with `npm install -g universal-context-engine`, you can use `uce` directly.
 
-## v2.6 Highlights 🚀
+## v3.0 Highlights 🚀
 
-**New in v2.6 - AI-Powered Features:**
+**New in v3.0 - Code Analytics & Intelligence:**
+- **📊 Complexity Analysis** - Cyclomatic & cognitive complexity metrics per function/file
+- **🔍 Code Smells Detection** - Identify long methods, god classes, duplicate code, deep nesting, magic numbers
+- **🏗️ Pattern Recognition** - Detect architectural (MVC, microservices) and design patterns (Singleton, Factory, Observer)
+- **⚡ Analytics MCP Tools** - `uce_analyze_complexity`, `uce_detect_smells`, `uce_detect_patterns` for AI-powered code quality insights
+
+**Previous Updates (v2.6 - AI-Powered Features):**
 - **🤖 AI-Powered Q&A** - Ask natural language questions about your codebase and get intelligent answers with context
 - **🌐 Multi-Source Indexing** - Index code from filesystem, APIs, GitHub, or in-memory sources
-- **🔌 Enhanced MCP Tools** - New `uce_ask` tool for conversational codebase exploration
+- **🔌 Enhanced MCP Tools** - `uce_ask` tool for conversational codebase exploration
 
-**Previous Updates (v2.5):**
+**Previous Updates (v2.5 - Performance):**
 - **💾 State Persistence** - 80% faster re-indexing by skipping unchanged files
 - **📊 Enhanced Stats** - Detailed tracking: new/updated/cached file counts
 - **🚫 .uceignore Support** - Fine-grained exclusion control alongside .gitignore

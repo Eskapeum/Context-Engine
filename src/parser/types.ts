@@ -537,3 +537,71 @@ export function getLanguageByExtension(extension: string): LanguageConfig | unde
 export function getLanguageById(id: string): LanguageConfig | undefined {
   return LANGUAGE_REGISTRY[id as SupportedLanguage];
 }
+
+// ============================================================================
+// ANALYTICS TYPES (v3.0+)
+// ============================================================================
+
+/**
+ * Parsed function information for analytics
+ */
+export interface ParsedFunction {
+  /** Function name */
+  name: string;
+  /** Start line number */
+  startLine: number;
+  /** End line number */
+  endLine: number;
+  /** Parameters */
+  parameters?: Parameter[];
+  /** Return type */
+  returnType?: string;
+  /** Whether async */
+  async?: boolean;
+  /** Whether exported */
+  exported?: boolean;
+}
+
+/**
+ * Parsed class information for analytics
+ */
+export interface ParsedClass {
+  /** Class name */
+  name: string;
+  /** Start line number */
+  startLine: number;
+  /** End line number */
+  endLine: number;
+  /** Methods */
+  methods?: ParsedFunction[];
+  /** Properties */
+  properties?: Symbol[];
+  /** Extends */
+  extends?: string[];
+  /** Implements */
+  implements?: string[];
+  /** Whether exported */
+  exported?: boolean;
+}
+
+/**
+ * Parsed file information for analytics
+ */
+export interface ParsedFile {
+  /** File path (relative) */
+  path: string;
+  /** File content */
+  content: string;
+  /** Programming language */
+  language: string;
+  /** Extracted functions */
+  functions: ParsedFunction[];
+  /** Extracted classes */
+  classes: ParsedClass[];
+  /** All symbols */
+  symbols?: Symbol[];
+  /** Imports */
+  imports?: Import[];
+  /** Exports */
+  exports?: Export[];
+}

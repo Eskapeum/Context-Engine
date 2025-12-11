@@ -116,6 +116,35 @@ export interface UCEConfig {
     /** Temperature for generation (0-1) */
     temperature?: number;
   };
+
+  /** Analytics configuration (v3.0+) */
+  analytics?: {
+    /** Enable code analytics */
+    enabled?: boolean;
+    /** Enable complexity analysis */
+    complexity?: boolean;
+    /** Enable code smells detection */
+    codeSmells?: boolean;
+    /** Enable pattern detection */
+    patterns?: boolean;
+    /** Complexity thresholds */
+    thresholds?: {
+      /** Long method line count */
+      longMethodLines?: number;
+      /** Long parameter list count */
+      longParameterCount?: number;
+      /** God class method count */
+      godClassMethods?: number;
+      /** Deep nesting level */
+      deepNestingLevel?: number;
+      /** Complexity low threshold */
+      complexityLow?: number;
+      /** Complexity medium threshold */
+      complexityMedium?: number;
+      /** Complexity high threshold */
+      complexityHigh?: number;
+    };
+  };
 }
 
 /**
@@ -166,6 +195,21 @@ export const DEFAULT_CONFIG: Required<UCEConfig> = {
     maxContextTokens: 4000,
     maxResponseTokens: 2000,
     temperature: 0.3,
+  },
+  analytics: {
+    enabled: true,
+    complexity: true,
+    codeSmells: true,
+    patterns: true,
+    thresholds: {
+      longMethodLines: 50,
+      longParameterCount: 5,
+      godClassMethods: 20,
+      deepNestingLevel: 4,
+      complexityLow: 5,
+      complexityMedium: 10,
+      complexityHigh: 20,
+    },
   },
 };
 

@@ -22,6 +22,12 @@ import {
   type ProjectSmellReport,
   type PatternDetectionResult,
 } from '../analytics/index.js';
+import {
+  getPersonalityInstructions,
+  getPersonalityMarkdown,
+  wrapToolDescription,
+  type UCEPersonality,
+} from './personality.js';
 import type { Symbol, SemanticChunk } from '../parser/types.js';
 import type { EdgeType } from '../graph/knowledge-graph.js';
 
@@ -79,10 +85,13 @@ export class MCPServer {
   private bm25: BM25Index | null = null;
   private watcher: FileWatcher | null = null;
   private qaEngine: QAEngine | null = null;
+  private personality: Partial<UCEPersonality>;
 
-  constructor(projectRoot: string) {
+  constructor(projectRoot: string, personality?: Partial<UCEPersonality>) {
     this.projectRoot = path.resolve(projectRoot);
     this.indexer = new IncrementalIndexer({ projectRoot: this.projectRoot });
+    // Personality enabled by default
+    this.personality = personality ?? { enabled: true };
   }
 
   /**
@@ -153,10 +162,10 @@ export class MCPServer {
   }
 
   /**
-   * Get available tools
+   * Get available tools with personality-wrapped descriptions
    */
   getTools(): MCPTool[] {
-    return [
+    const rawTools: MCPTool[] = [
       {
         name: 'uce_search',
         description:
@@ -545,13 +554,23 @@ export class MCPServer {
         },
       },
     ];
+
+    // Wrap tool descriptions with personality instructions if enabled (v3.6+)
+    if (this.personality.enabled !== false) {
+      return rawTools.map((tool) => ({
+        ...tool,
+        description: wrapToolDescription(tool.name, tool.description),
+      }));
+    }
+
+    return rawTools;
   }
 
   /**
    * Get available resources
    */
   getResources(): MCPResource[] {
-    return [
+    const resources: MCPResource[] = [
       {
         uri: `uce://${this.projectRoot}/index`,
         name: 'Project Index',
@@ -565,6 +584,19 @@ export class MCPServer {
         mimeType: 'application/json',
       },
     ];
+
+    // Add personality resource if enabled (v3.6+)
+    if (this.personality.enabled !== false) {
+      resources.unshift({
+        uri: `uce://${this.projectRoot}/personality`,
+        name: 'UCE System Instructions',
+        description:
+          '⚠️ IMPORTANT: Read this first! Contains auto-context rules and codebase interaction guidelines.',
+        mimeType: 'text/markdown',
+      });
+    }
+
+    return resources;
   }
 
   /**
@@ -728,6 +760,14 @@ export class MCPServer {
       return {
         contents: JSON.stringify(index.stats, null, 2),
         mimeType: 'application/json',
+      };
+    }
+
+    // Personality resource (v3.6+)
+    if (uri.endsWith('/personality')) {
+      return {
+        contents: getPersonalityMarkdown(this.personality),
+        mimeType: 'text/markdown',
       };
     }
 
@@ -1606,7 +1646,9 @@ export class MCPServer {
               },
               serverInfo: {
                 name: 'uce-context-engine',
-                version: '2.0.0',
+                version: '3.6.0',
+                // Auto-context personality instructions (v3.6+)
+                instructions: getPersonalityInstructions(this.personality),
               },
             },
           };

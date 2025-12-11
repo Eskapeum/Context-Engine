@@ -16,6 +16,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Nothing yet
 
+## [3.6.0] - 2025-12-11
+
+### Added
+- **Auto-Context Personality System** - UCE now automatically guides LLMs to use context tools
+  - "Childhood Friend" persona that knows your codebase intimately
+  - Auto-context rules embedded directly in MCP server (no external config files needed)
+  - Strong tool guidance: LLMs automatically use `uce_search` and `uce_get_context` before answering
+- **MCP Server `instructions` Field** - Server info now includes personality instructions
+  - Claude Code and other MCP clients receive auto-context rules on connection
+  - Works without CLAUDE.md or .cursorrules files
+- **Personality Resource** - New `uce://*/personality` resource with full instructions
+  - LLMs can read detailed auto-context rules and tool usage guidelines
+  - Marked as "IMPORTANT: Read this first" for visibility
+- **Tool Description Wrapping** - Each tool description now includes auto-use guidance
+  - `uce_search`: "ALWAYS use BEFORE answering ANY question about this codebase"
+  - `uce_get_context`: "ALWAYS use BEFORE implementing features or making code changes"
+  - And more per-tool instructions
+- **Personality Configuration** - New `personality` section in `.ucerc.json`
+  - Enabled by default (no action required for new installations)
+  - Configurable: `{ "personality": { "enabled": true, "name": "..." } }`
+
+### Technical Details
+- New module: `src/mcp/personality.ts` - Personality definitions and helpers
+- Extended `src/config.ts` with personality configuration
+- Modified `src/mcp/server.ts`:
+  - Added `instructions` field to serverInfo in initialize response
+  - Tool descriptions wrapped with auto-use guidance
+  - New personality resource endpoint
+- All 85 tests passing
+
 ## [3.5.2] - 2025-12-11
 
 ### Changed

@@ -145,6 +145,16 @@ export interface UCEConfig {
       complexityHigh?: number;
     };
   };
+
+  /** Personality & Auto-Context configuration (v3.6+) */
+  personality?: {
+    /** Enable auto-context personality (default: true) */
+    enabled?: boolean;
+    /** Custom persona name */
+    name?: string;
+    /** Custom instructions (overrides default) */
+    instructions?: string;
+  };
 }
 
 /**
@@ -210,6 +220,10 @@ export const DEFAULT_CONFIG: Required<UCEConfig> = {
       complexityMedium: 10,
       complexityHigh: 20,
     },
+  },
+  personality: {
+    enabled: true, // Enabled by default as per user preference
+    name: 'UCE Childhood Friend',
   },
 };
 
@@ -323,6 +337,10 @@ function mergeConfig(userConfig: Partial<UCEConfig>): UCEConfig {
     mcp: {
       ...DEFAULT_CONFIG.mcp,
       ...userConfig.mcp,
+    },
+    personality: {
+      ...DEFAULT_CONFIG.personality,
+      ...userConfig.personality,
     },
   };
 }

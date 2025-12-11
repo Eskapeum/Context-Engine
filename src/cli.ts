@@ -18,7 +18,7 @@ import { loadConfig, validateConfig, generateDefaultConfig, type UCEConfig } fro
 import * as fs from 'fs';
 import * as path from 'path';
 
-const VERSION = '3.5.2';
+const VERSION = '3.6.0';
 
 const program = new Command();
 

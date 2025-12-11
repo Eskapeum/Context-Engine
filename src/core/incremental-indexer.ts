@@ -123,6 +123,12 @@ export interface IndexStats {
   totalFiles: number;
   totalSymbols: number;
   totalChunks: number;
+  /** Files added in this index run (v2.5+) */
+  newFiles: number;
+  /** Files updated in this index run (v2.5+) */
+  updatedFiles: number;
+  /** Files skipped (unchanged) in this index run (v2.5+) */
+  cachedFiles: number;
   byLanguage: Record<string, { files: number; symbols: number }>;
   indexTime: number;
 }
@@ -157,6 +163,8 @@ export interface IndexUpdateResult {
   removed: string[];
   /** Files invalidated by dependency changes */
   invalidated: string[];
+  /** Files skipped (unchanged since last index) */
+  cached: string[];
   /** Total time taken (ms) */
   duration: number;
   /** New index generation */
@@ -301,8 +309,8 @@ export class IncrementalIndexer {
     // Update dependency graphs
     this.rebuildDependencyGraph();
 
-    // Update stats
-    this.updateStats();
+    // Update stats with change tracking
+    this.updateStats(changes.added.length, changes.modified.length, changes.cached.length);
 
     // Update timestamps
     this.projectIndex.updatedAt = new Date().toISOString();
@@ -323,12 +331,13 @@ export class IncrementalIndexer {
     const startTime = performance.now();
 
     if (!this.projectIndex) {
-      await this.projectIndex;
+      await this.index();
       return {
         added: [],
         modified: files,
         removed: [],
         invalidated: [],
+        cached: [],
         duration: performance.now() - startTime,
         generation: this.projectIndex!.generation,
       };
@@ -359,7 +368,7 @@ export class IncrementalIndexer {
     }
 
     this.rebuildDependencyGraph();
-    this.updateStats();
+    this.updateStats(added.length, modified.length, 0);
 
     this.projectIndex.updatedAt = new Date().toISOString();
     this.projectIndex.generation++;
@@ -371,6 +380,7 @@ export class IncrementalIndexer {
       modified,
       removed: [],
       invalidated,
+      cached: [],
       duration: performance.now() - startTime,
       generation: this.projectIndex.generation,
     };
@@ -438,6 +448,27 @@ export class IncrementalIndexer {
     return dependencies ? Array.from(dependencies) : [];
   }
 
+  /**
+   * Get file hashes for state export
+   */
+  getFileHashes(): Map<string, string> {
+    return new Map(this.fileHashes);
+  }
+
+  /**
+   * Set file hashes for state import
+   */
+  setFileHashes(hashes: Map<string, string>): void {
+    this.fileHashes = new Map(hashes);
+  }
+
+  /**
+   * Get current git branch info
+   */
+  getGitInfo(): GitBranchInfo {
+    return this.config.enableGitBranch ? this.getGitBranchInfo() : this.getDefaultGitInfo();
+  }
+
   // ============================================================================
   // PRIVATE METHODS
   // ============================================================================
@@ -454,6 +485,13 @@ export class IncrementalIndexer {
     const contextIgnorePath = path.join(this.config.projectRoot, '.contextignore');
     if (fs.existsSync(contextIgnorePath)) {
       const content = fs.readFileSync(contextIgnorePath, 'utf-8');
+      this.ig.add(content.split('\n').filter((line) => line.trim() && !line.startsWith('#')));
+    }
+
+    // Load .uceignore (v2.5+)
+    const uceIgnorePath = path.join(this.config.projectRoot, '.uceignore');
+    if (fs.existsSync(uceIgnorePath)) {
+      const content = fs.readFileSync(uceIgnorePath, 'utf-8');
       this.ig.add(content.split('\n').filter((line) => line.trim() && !line.startsWith('#')));
     }
   }
@@ -475,10 +513,12 @@ export class IncrementalIndexer {
     added: string[];
     modified: string[];
     removed: string[];
+    cached: string[];
   } {
     const added: string[] = [];
     const modified: string[] = [];
     const removed: string[] = [];
+    const cached: string[] = [];
 
     const currentFileSet = new Set(currentFiles);
     const indexedFileSet = this.projectIndex ? new Set(this.projectIndex.files.keys()) : new Set<string>();
@@ -495,6 +535,8 @@ export class IncrementalIndexer {
 
         if (newHash !== oldHash) {
           modified.push(file);
+        } else {
+          cached.push(file);
         }
       }
     }
@@ -508,7 +550,7 @@ export class IncrementalIndexer {
       }
     }
 
-    return { added, modified, removed };
+    return { added, modified, removed, cached };
   }
 
   private computeFileHash(filePath: string): string {
@@ -674,13 +716,16 @@ export class IncrementalIndexer {
     return null;
   }
 
-  private updateStats(): void {
+  private updateStats(newFiles: number = 0, updatedFiles: number = 0, cachedFiles: number = 0): void {
     if (!this.projectIndex) return;
 
     const stats: IndexStats = {
       totalFiles: this.projectIndex.files.size,
       totalSymbols: 0,
       totalChunks: 0,
+      newFiles,
+      updatedFiles,
+      cachedFiles,
       byLanguage: {},
       indexTime: 0,
     };
@@ -716,6 +761,9 @@ export class IncrementalIndexer {
         totalFiles: 0,
         totalSymbols: 0,
         totalChunks: 0,
+        newFiles: 0,
+        updatedFiles: 0,
+        cachedFiles: 0,
         byLanguage: {},
         indexTime: 0,
       },

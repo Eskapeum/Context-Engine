@@ -13,6 +13,7 @@ import { IncrementalIndexer } from '../core/incremental-indexer.js';
 import { FileWatcher } from '../core/watcher.js';
 import { KnowledgeGraph, GraphBuilder } from '../graph/index.js';
 import { BM25Index } from '../retrieval/bm25.js';
+import { QAEngine, type QAOptions, type QAResult } from '../qa/index.js';
 import type { Symbol, SemanticChunk } from '../parser/types.js';
 import type { EdgeType } from '../graph/knowledge-graph.js';
 
@@ -69,6 +70,7 @@ export class MCPServer {
   private graph: KnowledgeGraph | null = null;
   private bm25: BM25Index | null = null;
   private watcher: FileWatcher | null = null;
+  private qaEngine: QAEngine | null = null;
 
   constructor(projectRoot: string) {
     this.projectRoot = path.resolve(projectRoot);
@@ -122,6 +124,24 @@ export class MCPServer {
     );
 
     return this.bm25;
+  }
+
+  /**
+   * Initialize Q&A engine if needed
+   */
+  private ensureQAEngine(options?: Partial<QAOptions>): QAEngine {
+    if (this.qaEngine) return this.qaEngine;
+
+    this.qaEngine = new QAEngine({
+      provider: options?.provider || 'anthropic',
+      apiKey: options?.apiKey || process.env.ANTHROPIC_API_KEY || '',
+      model: options?.model,
+      maxContextTokens: options?.maxContextTokens,
+      maxResponseTokens: options?.maxResponseTokens,
+      temperature: options?.temperature,
+    });
+
+    return this.qaEngine;
   }
 
   /**
@@ -407,6 +427,42 @@ export class MCPServer {
           properties: {},
         },
       },
+      {
+        name: 'uce_ask',
+        description:
+          'Ask a question about the codebase and get an AI-generated answer with relevant code context. Uses LLM (Claude/GPT) to analyze code and provide intelligent responses.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            question: {
+              type: 'string',
+              description: 'Question to ask about the codebase',
+            },
+            maxContextTokens: {
+              type: 'number',
+              description: 'Maximum tokens for context retrieval (default: 4000)',
+            },
+            maxResponseTokens: {
+              type: 'number',
+              description: 'Maximum tokens for LLM response (default: 2000)',
+            },
+            provider: {
+              type: 'string',
+              enum: ['anthropic', 'openai'],
+              description: 'LLM provider to use (default: anthropic)',
+            },
+            model: {
+              type: 'string',
+              description: 'Specific model to use (optional)',
+            },
+            temperature: {
+              type: 'number',
+              description: 'Temperature for generation 0-1 (default: 0.3)',
+            },
+          },
+          required: ['question'],
+        },
+      },
     ];
   }
 
@@ -488,6 +544,9 @@ export class MCPServer {
 
       case 'uce_health':
         return this.handleHealth();
+
+      case 'uce_ask':
+        return this.handleAsk(args);
 
       default:
         throw new Error(`Unknown tool: ${name}`);
@@ -1200,6 +1259,33 @@ export class MCPServer {
       edgesByType: stats.edgesByType,
       topConnected: connectionCounts.slice(0, 10),
     };
+  }
+
+  private async handleAsk(args: Record<string, unknown>): Promise<QAResult> {
+    const question = args.question as string;
+    const maxContextTokens = (args.maxContextTokens as number) || 4000;
+    const maxResponseTokens = (args.maxResponseTokens as number) || 2000;
+    const provider = (args.provider as 'anthropic' | 'openai') || 'anthropic';
+    const model = args.model as string | undefined;
+    const temperature = (args.temperature as number) || 0.3;
+
+    // 1. Get relevant context using hybrid search
+    const contextResult = await this.handleGetContext({
+      task: question,
+      maxTokens: maxContextTokens,
+    });
+
+    // 2. Initialize QA engine
+    const qaEngine = this.ensureQAEngine({
+      provider,
+      model,
+      maxContextTokens,
+      maxResponseTokens,
+      temperature,
+    });
+
+    // 3. Ask the question
+    return qaEngine.ask(question, contextResult.context);
   }
 
   private graphToDot(

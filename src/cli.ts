@@ -17,7 +17,7 @@ import { loadConfig, validateConfig, generateDefaultConfig, type UCEConfig } fro
 import * as fs from 'fs';
 import * as path from 'path';
 
-const VERSION = '2.4.0';
+const VERSION = '2.5.0';
 
 const program = new Command();
 
@@ -68,23 +68,28 @@ site/
       }
     }
 
-    // Run initial index
-    const indexer = new Indexer({ projectRoot });
-    const index = await indexer.index();
-    await indexer.saveIndex(index);
+    // Run initial index with enhanced stats (v2.5+)
+    const engine = new ContextEngine({ projectRoot, autoIndex: false });
+    await engine.initialize();
+    const result = await engine.index();
 
     if (!options.silent) {
-      console.log(`✅ Indexed ${index.totalFiles} files, ${index.totalSymbols} symbols`);
+      console.log(`✅ Indexed ${result.files} files (${result.newFiles} new)`);
+      console.log(`   ${result.symbols} symbols | ${result.chunks} chunks`);
     }
 
     // Generate context file (UCE.md only by default)
-    const generator = new ContextGenerator({ projectRoot, index });
-    generator.generateAll();
+    const indexer = new Indexer({ projectRoot });
+    const index = indexer.loadIndex();
+    if (index) {
+      const generator = new ContextGenerator({ projectRoot, index });
+      generator.generateAll();
 
-    if (!options.silent) {
-      console.log('✅ Generated UCE.md (universal context file)');
-      console.log('\n📁 Index stored in .uce/');
-      console.log('\n💡 Tip: Commit UCE.md to share context with your team!');
+      if (!options.silent) {
+        console.log('✅ Generated UCE.md (universal context file)');
+        console.log('\n📁 Index stored in .uce/');
+        console.log('\n💡 Tip: Commit UCE.md to share context with your team!');
+      }
     }
   });
 
@@ -103,23 +108,41 @@ program
     console.log(`📇 Indexing ${projectRoot}...\n`);
 
     const startTime = Date.now();
-    const indexer = new Indexer({ projectRoot });
-    const index = await indexer.index();
-    await indexer.saveIndex(index);
+
+    // Use ContextEngine for enhanced stats (v2.5+)
+    const engine = new ContextEngine({ projectRoot, autoIndex: false });
+    await engine.initialize();
+    const result = await engine.index();
 
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
-    console.log(`✅ Indexed ${index.totalFiles} files, ${index.totalSymbols} symbols in ${elapsed}s`);
+
+    // Display enhanced stats (v2.5+)
+    if (result.newFiles > 0 || result.updatedFiles > 0 || result.cachedFiles > 0) {
+      console.log(`✅ Indexed ${result.files} files (${result.newFiles} new, ${result.updatedFiles} updated, ${result.cachedFiles} cached)`);
+    } else {
+      console.log(`✅ Indexed ${result.files} files`);
+    }
+
+    console.log(`   ${result.symbols} symbols | ${result.chunks} chunks | ${elapsed}s`);
 
     // Show language breakdown
-    console.log('\n📊 Language breakdown:');
-    for (const [lang, stats] of Object.entries(index.languageStats)) {
-      console.log(`   ${lang}: ${stats.files} files, ${stats.symbols} symbols`);
+    const stats = engine.getStats();
+    if (stats && Object.keys(stats.byLanguage).length > 0) {
+      console.log('\n📊 Language breakdown:');
+      for (const [lang, langStats] of Object.entries(stats.byLanguage)) {
+        console.log(`   ${lang}: ${langStats.files} files, ${langStats.symbols} symbols`);
+      }
     }
 
     if (options.generate !== false) {
-      const generator = new ContextGenerator({ projectRoot, index });
-      generator.generateAll();
-      console.log('\n✅ Generated UCE.md');
+      // Get the index for generation
+      const indexer = new Indexer({ projectRoot });
+      const index = indexer.loadIndex();
+      if (index) {
+        const generator = new ContextGenerator({ projectRoot, index });
+        generator.generateAll();
+        console.log('\n✅ Generated UCE.md');
+      }
     }
   });
 

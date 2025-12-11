@@ -388,6 +388,13 @@ export class Indexer {
       const contextIgnore = fs.readFileSync(contextIgnorePath, 'utf-8');
       this.ig.add(contextIgnore.split('\n').filter((line) => line.trim() && !line.startsWith('#')));
     }
+
+    // Load .uceignore if exists (v2.5+)
+    const uceIgnorePath = path.join(this.config.projectRoot, '.uceignore');
+    if (fs.existsSync(uceIgnorePath)) {
+      const uceIgnore = fs.readFileSync(uceIgnorePath, 'utf-8');
+      this.ig.add(uceIgnore.split('\n').filter((line) => line.trim() && !line.startsWith('#')));
+    }
   }
 
   /**

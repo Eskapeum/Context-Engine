@@ -18,3 +18,11 @@ export {
 
 // JSON implementation (MVP)
 export { JsonIndexStore, createJsonStore } from './json-store.js';
+
+// State manager (v2.5+)
+export {
+  StateManager,
+  createStateManager,
+  type EngineState,
+  type StateManagerOptions,
+} from './state-manager.js';

@@ -2,7 +2,7 @@
   <img src="assets/uce-logo.svg" width="200" alt="Universal Context Engine Logo">
 </p>
 
-<h1 align="center">Universal Context Engine (UCE) v2.4</h1>
+<h1 align="center">Universal Context Engine (UCE) v2.6</h1>
 
 <p align="center">
   <strong>The most intelligent context engine for AI coding assistants</strong>
@@ -39,8 +39,19 @@ npx universal-context-engine init
 
 > **Note:** Use `npx universal-context-engine` (not `npx uce`) because there's an unrelated npm package named `uce`. After installing globally with `npm install -g universal-context-engine`, you can use `uce` directly.
 
-## v2.4 Highlights
+## v2.6 Highlights 🚀
 
+**New in v2.6 - AI-Powered Features:**
+- **🤖 AI-Powered Q&A** - Ask natural language questions about your codebase and get intelligent answers with context
+- **🌐 Multi-Source Indexing** - Index code from filesystem, APIs, GitHub, or in-memory sources
+- **🔌 Enhanced MCP Tools** - New `uce_ask` tool for conversational codebase exploration
+
+**Previous Updates (v2.5):**
+- **💾 State Persistence** - 80% faster re-indexing by skipping unchanged files
+- **📊 Enhanced Stats** - Detailed tracking: new/updated/cached file counts
+- **🚫 .uceignore Support** - Fine-grained exclusion control alongside .gitignore
+
+**Core Features:**
 - **🔄 Auto-Indexing** - Git pre-commit hook and background daemon for automatic UCE.md updates
 - **🔌 Auto-Install Integrations** - `uce install` command for one-click AI assistant setup
 - **Tree-sitter AST Parsing** - 20+ languages with accurate symbol extraction
@@ -55,10 +66,13 @@ npx universal-context-engine init
 
 | Feature | Description |
 |---------|-------------|
+| **AI-Powered Q&A** | Ask questions about your codebase and get intelligent answers (v2.6+) |
+| **Multi-Source Indexing** | Index from filesystem, GitHub, APIs, or in-memory code (v2.6+) |
 | **Tree-sitter Parsing** | Accurate AST-based symbol extraction for 20+ languages |
 | **Knowledge Graph** | Track function calls, class inheritance, and dependencies |
 | **Hybrid Search** | BM25 lexical + semantic vector search |
 | **Incremental Index** | Fast updates - only re-parse changed files |
+| **State Persistence** | 80% faster re-indexing with file hash caching (v2.5+) |
 | **MCP Server** | Model Context Protocol server for AI assistants |
 | **Watch Mode** | Real-time index updates on file changes |
 | **Universal Output** | Single UCE.md file works with Claude, Cursor, Copilot, any LLM |
@@ -97,9 +111,15 @@ npx uce init
 Creates:
 ```
 your-project/
-├── .uce/index.json      # Codebase index
+├── .uce/
+│   ├── index.json       # Codebase index
+│   └── state.json.gz    # State for fast re-indexing (v2.5+)
+├── .contextignore       # File exclusion patterns (auto-created)
+├── .uceignore           # UCE-specific exclusions (optional, v2.5+)
 └── UCE.md               # Universal context file (works with any AI)
 ```
+
+**Note:** UCE respects `.gitignore`, `.contextignore`, and `.uceignore` (v2.5+) for file exclusions.
 
 ### 2. View Stats
 
@@ -207,9 +227,24 @@ Create `.ucerc.json`:
   "enableEmbeddings": false,
   "output": {
     "uceMd": true
+  },
+  "state": {
+    "enabled": true,
+    "path": ".uce/state.json.gz",
+    "autoExport": true
+  },
+  "qa": {
+    "provider": "anthropic",
+    "model": "claude-3-5-sonnet-20241022",
+    "maxContextTokens": 4000,
+    "maxResponseTokens": 2000
   }
 }
 ```
+
+**New in v2.6:** The `qa` configuration enables AI-powered question answering about your codebase.
+
+**New in v2.5:** The `state` configuration enables state persistence for 80% faster re-indexing.
 
 Generate default config:
 ```bash
@@ -230,6 +265,12 @@ const engine = new ContextEngine({
 
 await engine.initialize();
 await engine.index();
+
+// AI-powered Q&A (v2.6+)
+const qaResult = await engine.ask('How does authentication work?');
+console.log(qaResult.answer);
+console.log(`Confidence: ${qaResult.confidence}`);
+console.log(`Sources: ${qaResult.sources.length} files`);
 
 // Retrieve context for a query
 const context = await engine.retrieve('how does auth work?');
@@ -312,13 +353,15 @@ Add to your MCP configuration:
 
 | Tool | Description |
 |------|-------------|
-| `retrieve` | Get relevant context for a query |
-| `search` | Search symbols |
-| `related` | Find related code |
-| `callers` | Find function callers |
-| `inheritance` | Get class hierarchy |
-| `dependencies` | Get file dependencies |
-| `stats` | Index statistics |
+| `uce_ask` | **NEW v2.6** - Ask natural language questions about the codebase |
+| `uce_get_context` | Get relevant context for a query |
+| `uce_search` | Search symbols |
+| `uce_find_related` | Find related code |
+| `uce_get_callers` | Find function callers |
+| `uce_get_inheritance` | Get class hierarchy |
+| `uce_get_dependencies` | Get file dependencies |
+| `uce_graph_stats` | Knowledge graph statistics |
+| `uce_health` | Server health check |
 
 ## Auto-Indexing
 

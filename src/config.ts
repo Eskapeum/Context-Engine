@@ -90,6 +90,32 @@ export interface UCEConfig {
     /** Default max tokens for retrieval */
     defaultMaxTokens?: number;
   };
+
+  /** State persistence configuration (v2.5+) */
+  state?: {
+    /** Enable state persistence */
+    enabled?: boolean;
+    /** State file path (default: .uce/state.json.gz) */
+    path?: string;
+    /** Auto-export state on index completion */
+    autoExport?: boolean;
+  };
+
+  /** Q&A engine configuration (v2.6+) */
+  qa?: {
+    /** LLM provider (anthropic or openai) */
+    provider?: 'anthropic' | 'openai';
+    /** Model to use */
+    model?: string;
+    /** API key for provider */
+    apiKey?: string;
+    /** Maximum tokens for context */
+    maxContextTokens?: number;
+    /** Maximum tokens for response */
+    maxResponseTokens?: number;
+    /** Temperature for generation (0-1) */
+    temperature?: number;
+  };
 }
 
 /**
@@ -128,6 +154,18 @@ export const DEFAULT_CONFIG: Required<UCEConfig> = {
   mcp: {
     watchMode: false,
     defaultMaxTokens: 8000,
+  },
+  state: {
+    enabled: false,
+    path: '.uce/state.json.gz',
+    autoExport: true,
+  },
+  qa: {
+    provider: 'anthropic',
+    model: 'claude-3-5-sonnet-20241022',
+    maxContextTokens: 4000,
+    maxResponseTokens: 2000,
+    temperature: 0.3,
   },
 };
 

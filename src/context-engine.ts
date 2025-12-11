@@ -20,6 +20,8 @@ import { BM25Index } from './retrieval/bm25.js';
 import { BudgetOptimizer } from './retrieval/budget.js';
 import { reciprocalRankFusion } from './retrieval/hybrid.js';
 import { KnowledgeGraph, GraphBuilder } from './graph/index.js';
+import { StateManager, type EngineState } from './storage/state-manager.js';
+import { QAEngine, type QAOptions, type QAResult } from './qa/index.js';
 
 // ============================================================================
 // TYPES
@@ -96,6 +98,7 @@ export class ContextEngine {
   private bm25: BM25Index | null = null;
   private graph: KnowledgeGraph | null = null;
   private budgetOptimizer: BudgetOptimizer;
+  private qaEngine: QAEngine | null = null;
   private initialized = false;
   private embeddingsEnabled: boolean;
 
@@ -160,6 +163,9 @@ export class ContextEngine {
     symbols: number;
     chunks: number;
     duration: number;
+    newFiles: number;
+    updatedFiles: number;
+    cachedFiles: number;
   }> {
     const startTime = performance.now();
 
@@ -185,6 +191,9 @@ export class ContextEngine {
       symbols: projectIndex.stats.totalSymbols,
       chunks: projectIndex.stats.totalChunks,
       duration: performance.now() - startTime,
+      newFiles: projectIndex.stats.newFiles,
+      updatedFiles: projectIndex.stats.updatedFiles,
+      cachedFiles: projectIndex.stats.cachedFiles,
     };
   }
 
@@ -407,6 +416,47 @@ export class ContextEngine {
   }
 
   /**
+   * Ask a question about the codebase with AI-powered answering (v2.6+)
+   *
+   * Automatically retrieves relevant context and generates an intelligent answer.
+   *
+   * @param question - Question to ask about the codebase
+   * @param options - Optional Q&A configuration
+   * @returns Answer with sources and metadata
+   *
+   * @example
+   * ```typescript
+   * const result = await engine.ask('How does authentication work?');
+   * console.log(result.answer);
+   * console.log(`Sources: ${result.sources.length} files`);
+   * ```
+   */
+  async ask(question: string, options?: Partial<QAOptions>): Promise<QAResult> {
+    await this.initialize();
+
+    // 1. Retrieve relevant context using hybrid search
+    const context = await this.retrieve(question, {
+      maxTokens: options?.maxContextTokens || 4000,
+    });
+
+    // 2. Initialize QA engine if needed
+    if (!this.qaEngine) {
+      this.qaEngine = new QAEngine({
+        provider: options?.provider || 'anthropic',
+        apiKey: options?.apiKey || process.env.ANTHROPIC_API_KEY || '',
+        model: options?.model,
+        maxContextTokens: options?.maxContextTokens,
+        maxResponseTokens: options?.maxResponseTokens,
+        includeSources: options?.includeSources,
+        temperature: options?.temperature,
+      });
+    }
+
+    // 3. Ask the question with the retrieved context
+    return this.qaEngine.ask(question, context.content);
+  }
+
+  /**
    * Search for symbols
    */
   searchSymbols(
@@ -568,6 +618,69 @@ export class ContextEngine {
         file: n.filePath,
       })),
     };
+  }
+
+  /**
+   * Export current engine state for persistence
+   *
+   * Allows saving and restoring engine state to skip re-indexing unchanged files.
+   * State includes file hashes, index generation, and statistics.
+   *
+   * @returns Engine state snapshot
+   */
+  async exportState(): Promise<EngineState> {
+    await this.initialize();
+
+    const index = this.indexer.getIndex();
+    if (!index) {
+      throw new Error('No index available to export state from');
+    }
+
+    const stateManager = new StateManager();
+
+    // Get BM25 vocabulary if available (note: not persisted in current implementation)
+    const bm25Vocab = undefined;
+
+    // Get graph node count if available
+    const graphNodeCount = this.graph ? this.graph.getStats().nodeCount : undefined;
+
+    // Get embeddings count if available
+    const embeddingsCount = this.vectorStore ? await this.vectorStore.count() : 0;
+
+    return stateManager.exportState({
+      projectRoot: this.config.projectRoot,
+      git: index.git,
+      fileHashes: this.indexer.getFileHashes(),
+      indexGeneration: index.generation,
+      stats: {
+        totalFiles: index.stats.totalFiles,
+        totalSymbols: index.stats.totalSymbols,
+        totalChunks: index.stats.totalChunks,
+      },
+      embeddingsCount,
+      bm25Vocab,
+      graphNodeCount,
+    });
+  }
+
+  /**
+   * Import engine state from persistence
+   *
+   * Restores file hashes and index generation to enable incremental indexing
+   * without re-processing unchanged files.
+   *
+   * @param state - Engine state to import
+   */
+  async importState(state: EngineState): Promise<void> {
+    await this.initialize();
+
+    const stateManager = new StateManager();
+    const imported = await stateManager.importState(state);
+
+    // Restore file hashes to indexer
+    this.indexer.setFileHashes(imported.fileHashes);
+
+    // Note: Index generation will be updated by the indexer on next index() call
   }
 
   /**

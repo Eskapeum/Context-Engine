@@ -127,6 +127,9 @@ export {
   createAutoVectorStore,
 } from './embeddings/vector-store.js';
 
+// Sources module (v2.6+)
+export * from './sources/index.js';
+
 // Context Engine
 export { ContextEngine } from './context-engine.js';
 export type {
@@ -143,6 +146,12 @@ export {
   DEFAULT_CONFIG,
 } from './config.js';
 export type { UCEConfig } from './config.js';
+
+// Storage module (v2.5+)
+export * from './storage/index.js';
+
+// Q&A module (v2.6+)
+export * from './qa/index.js';
 
 // MCP Server
 export { MCPServer } from './mcp/server.js';
@@ -242,7 +251,7 @@ export async function startMCPServer(
 /**
  * Version of the UCE package.
  */
-export const VERSION = '2.4.1';
+export const VERSION = '2.6.0';
 
 // Default export for convenience
 export default {

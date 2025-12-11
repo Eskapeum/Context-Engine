@@ -1,6 +1,6 @@
 # Installation Guide
 
-Complete installation and setup guide for Universal Context Engine (UCE) v2.4.
+Complete installation and setup guide for Universal Context Engine (UCE) v2.6.
 
 ## Table of Contents
 

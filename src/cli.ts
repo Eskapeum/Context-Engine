@@ -881,21 +881,8 @@ program
     // Dynamically import the server to avoid circular deps
     const { UCEServer } = await import('./mcp/server.js');
 
-    const indexer = new Indexer({ projectRoot });
-    let index = indexer.loadIndex();
-
-    if (!index) {
-      console.error('📇 No existing index, creating...');
-      index = await indexer.index();
-      await indexer.saveIndex(index);
-    }
-
-    const engine = new ContextEngine({
-      projectRoot,
-      index,
-      enableEmbeddings: config.enableEmbeddings,
-    });
-    const server = new UCEServer(projectRoot, engine);
+    // Create server with projectRoot - it handles its own indexing
+    const server = new UCEServer(projectRoot, config.personality);
 
     if (options.watch || config.mcp?.watchMode) {
       server.startWatch();

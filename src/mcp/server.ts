@@ -1808,6 +1808,60 @@ export class MCPServer {
   }
 
   /**
+   * Start watching for file changes
+   */
+  startWatch(): void {
+    this.handleWatchStart({ ignore: ['node_modules', '.git', 'dist', '.uce'] });
+  }
+
+  /**
+   * Run the MCP server using stdio transport (stdin/stdout)
+   * This is the transport used by Claude Code
+   */
+  async run(): Promise<void> {
+    const readline = await import('readline');
+
+    // Don't auto-index on startup - let it happen lazily on first tool call
+    // This ensures fast startup for Claude Code connection
+
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+      terminal: false,
+    });
+
+    // Read line-delimited JSON-RPC from stdin
+    rl.on('line', async (line: string) => {
+      try {
+        const request = JSON.parse(line) as MCPRequest;
+        const response = await this.handleRequest(request);
+        // Write response to stdout
+        process.stdout.write(JSON.stringify(response) + '\n');
+      } catch (error) {
+        const errorResponse: MCPResponse = {
+          jsonrpc: '2.0',
+          id: null as unknown as string,
+          error: {
+            code: -32700,
+            message: 'Parse error',
+            data: error instanceof Error ? error.message : 'Unknown error',
+          },
+        };
+        process.stdout.write(JSON.stringify(errorResponse) + '\n');
+      }
+    });
+
+    // Handle close
+    rl.on('close', () => {
+      this.stop();
+      process.exit(0);
+    });
+
+    // Keep process alive
+    await new Promise(() => {});
+  }
+
+  /**
    * Stop the server and cleanup
    */
   stop(): Promise<void> {
@@ -1906,4 +1960,6 @@ export class MCPServer {
   }
 }
 
+// Alias for backward compatibility with CLI
+export { MCPServer as UCEServer };
 export default MCPServer;

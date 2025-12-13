@@ -16,6 +16,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Nothing yet
 
+## [3.6.1] - 2025-12-13
+
+### Fixed
+- **Critical: MCP Server stdio transport** - Added missing `run()` method for Claude Code integration
+  - Added `run()` method for stdio transport (stdin/stdout JSON-RPC)
+  - Added `startWatch()` convenience method for file watching
+  - Added `UCEServer` export alias for backward compatibility
+- **CLI serve command** - Fixed constructor call to use personality config instead of engine
+  - Removed redundant indexer/engine creation (server handles its own indexing)
+  - Server now initializes lazily for faster Claude Code connection startup
+
+### Technical Details
+- `src/mcp/server.ts`: Added `run()`, `startWatch()`, and `UCEServer` export
+- `src/cli.ts`: Simplified serve command to use `UCEServer(projectRoot, config.personality)`
+- All 85 tests passing
+
 ## [3.6.0] - 2025-12-11
 
 ### Added

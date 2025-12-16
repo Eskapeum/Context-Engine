@@ -1,6 +1,6 @@
 # Installation Guide
 
-Complete installation and setup guide for Universal Context Engine (UCE) v3.6.0.
+Complete installation and setup guide for Universal Context Engine (UCE) v4.0.0.
 
 ## Table of Contents
 
@@ -326,6 +326,9 @@ npx universal-context-engine serve --port 3333
 | `clean` | Remove generated files |
 | `info` | Show version and system info |
 | `hello` | Guided onboarding |
+| `share` | **v4.0** Export context bundle for team sharing |
+| `share-import <bundle>` | **v4.0** Import context bundle |
+| `share-info <bundle>` | **v4.0** Show bundle information |
 
 ## Troubleshooting
 

@@ -16,6 +16,63 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Nothing yet
 
+## [4.0.0] - 2025-12-16
+
+### Added
+- **Library Documentation System** (`src/library-docs/`)
+  - Local-first extraction from node_modules `.d.ts` files
+  - Automatic caching in `.uce/library-docs/`
+  - MCP tool: `uce_get_library_docs`
+
+- **Sequential Thinking Engine** (`src/thinking/`)
+  - Multi-step reasoning with revision and branching support
+  - Thought graph tracking for lineage visualization
+  - Confidence scoring per thought
+  - MCP tool: `uce_sequential_think`
+
+- **Persistent Memory** (`src/memory/`)
+  - Q&A session history with file/symbol tracking
+  - Extractive summarization (local-first, no LLM required)
+  - Session statistics and cleanup
+  - MCP tools: `uce_search_history`, `uce_get_file_discussion`, `uce_get_session_summary`, `uce_memory_stats`
+
+- **Context Sharing** (`src/sharing/`)
+  - Export/import portable context bundles for team collaboration
+  - Privacy controls (anonymize symbols, exclude patterns)
+  - Bundle comparison and diff
+  - CLI commands: `uce share`, `uce share-import`, `uce share-info`
+  - MCP tools: `uce_export_context`, `uce_import_context`, `uce_bundle_info`
+
+- **cAST Chunking Algorithm** - AST-aware semantic chunking
+  - Non-whitespace character sizing for accurate token estimation
+  - Recursive node breaking at semantic boundaries
+  - Greedy sibling merging for optimal chunks
+  - +4.3 Recall@5 improvement over line-based chunking
+
+- **Knowledge Graph Enhancements**
+  - Query cache with LRU eviction (`src/graph/query-cache.ts`)
+  - Cycle detection using Tarjan's SCC algorithm (`src/graph/cycle-detector.ts`)
+  - Symbol-level dependency tracking (`src/graph/symbol-tracker.ts`)
+
+### Changed
+- Updated version to 4.0.0
+- Updated README with v4.0 features and architecture diagram
+- Updated INSTALLATION.md with new CLI commands
+- MCP Server now exposes 18 tools (up from 9)
+
+### Technical Details
+- 5 new source modules (library-docs, thinking, memory, sharing, graph enhancements)
+- 30 new files, 8574 lines of code added
+- All 85 tests passing
+- 100% local-first: no cloud services required
+
+## [3.6.2] - 2025-12-14
+
+### Fixed
+- **Critical: Infinite loop in generateChunks** - Fixed lookback loop that could hang indefinitely
+  - Added maximum iterations guard (10 iterations)
+  - Loop now properly terminates when no better merge found
+
 ## [3.6.1] - 2025-12-13
 
 ### Fixed

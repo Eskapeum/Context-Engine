@@ -2,7 +2,7 @@
   <img src="assets/uce-logo.svg" width="200" alt="Universal Context Engine Logo">
 </p>
 
-<h1 align="center">Universal Context Engine (UCE) v3.6.0</h1>
+<h1 align="center">Universal Context Engine (UCE) v4.0.0</h1>
 
 <p align="center">
   <strong>The most intelligent context engine for AI coding assistants</strong>
@@ -39,38 +39,30 @@ npx universal-context-engine init
 
 > **Note:** Use `npx universal-context-engine` (not `npx uce`) because there's an unrelated npm package named `uce`. After installing globally with `npm install -g universal-context-engine`, you can use `uce` directly.
 
-## v3.6.0 Highlights 🚀
+## v4.0.0 Highlights 🚀
 
-**New in v3.6 - Auto-Context Intelligence:**
-- **🧠 Auto-Context Personality** - UCE now guides LLMs to automatically use context tools
+**New in v4.0 - Modern LLM Contexting:**
+- **📚 Library Documentation** - Local-first extraction from node_modules `.d.ts` files with caching
+- **🧠 Sequential Thinking** - Multi-step reasoning engine with thought branching and revision
+- **💾 Persistent Memory** - Q&A session history with file/symbol tracking and summarization
+- **🤝 Context Sharing** - Export/import portable context bundles for team collaboration
+- **🌲 cAST Chunking** - AST-aware semantic chunking for optimal retrieval (+4.3 Recall@5)
+- **⚡ Knowledge Graph+** - Query caching, cycle detection, symbol-level dependencies
+- **🔧 7 New MCP Tools** - Memory search, session summaries, context export/import
+
+**Previous Updates (v3.6):**
+- **🧠 Auto-Context Personality** - UCE guides LLMs to automatically use context tools
 - **👥 "Childhood Friend" Persona** - Knows your codebase intimately, never guesses
-- **🔌 Zero Config Required** - Works without CLAUDE.md or .cursorrules files
-- **📝 Smart Tool Guidance** - LLMs automatically search before answering
 
-**Previous Updates (v3.5.1):**
-- **🐛 Fixed Daemon/Watch Crash** - Critical fix for `uce watch` and `uce daemon` commands
+**Previous Updates (v3.5):**
+- **⚡ Parallel Indexing** - Multi-threaded indexing using worker threads
+- **🎯 Interactive CLI Mode** - REPL-style interface for codebase exploration
+- **💾 Embedding Cache** - Persistent caching with SHA-256 content hashing
 
-**Previous Updates (v3.5 - Production-Ready Features):**
-- **⚡ Parallel Indexing** - Multi-threaded indexing using worker threads for massive performance gains
-- **🎯 Interactive CLI Mode** - REPL-style interface for codebase exploration with `/search`, `/ask`, `/stats` commands
-- **💾 Embedding Cache** - Persistent caching with SHA-256 content hashing for 10x faster embedding generation
-- **📦 Batch Processor** - Efficient batch embedding with rate limiting and concurrency control
-
-**Previous Updates (v3.0 - Code Analytics):**
-- **📊 Complexity Analysis** - Cyclomatic & cognitive complexity metrics per function/file
-- **🔍 Code Smells Detection** - Identify long methods, god classes, duplicate code, deep nesting, magic numbers
-- **🏗️ Pattern Recognition** - Detect architectural (MVC, microservices) and design patterns (Singleton, Factory, Observer)
-- **⚡ Analytics MCP Tools** - `uce_analyze_complexity`, `uce_detect_smells`, `uce_detect_patterns` for AI-powered code quality insights
-
-**Previous Updates (v2.6 - AI-Powered Features):**
-- **🤖 AI-Powered Q&A** - Ask natural language questions about your codebase and get intelligent answers with context
-- **🌐 Multi-Source Indexing** - Index code from filesystem, APIs, GitHub, or in-memory sources
-- **🔌 Enhanced MCP Tools** - `uce_ask` tool for conversational codebase exploration
-
-**Previous Updates (v2.5 - Performance):**
-- **💾 State Persistence** - 80% faster re-indexing by skipping unchanged files
-- **📊 Enhanced Stats** - Detailed tracking: new/updated/cached file counts
-- **🚫 .uceignore Support** - Fine-grained exclusion control alongside .gitignore
+**Previous Updates (v3.0):**
+- **📊 Complexity Analysis** - Cyclomatic & cognitive complexity metrics
+- **🔍 Code Smells Detection** - Long methods, god classes, duplicate code
+- **🏗️ Pattern Recognition** - Architectural and design pattern detection
 
 **Core Features:**
 - **🔄 Auto-Indexing** - Git pre-commit hook and background daemon for automatic UCE.md updates
@@ -87,13 +79,16 @@ npx universal-context-engine init
 
 | Feature | Description |
 |---------|-------------|
+| **Library Docs** | Local-first library documentation from node_modules (v4.0+) |
+| **Sequential Thinking** | Multi-step reasoning engine with branching (v4.0+) |
+| **Persistent Memory** | Q&A session history with summarization (v4.0+) |
+| **Context Sharing** | Export/import context bundles for teams (v4.0+) |
+| **cAST Chunking** | AST-aware semantic chunking for optimal retrieval (v4.0+) |
 | **AI-Powered Q&A** | Ask questions about your codebase and get intelligent answers (v2.6+) |
-| **Multi-Source Indexing** | Index from filesystem, GitHub, APIs, or in-memory code (v2.6+) |
 | **Tree-sitter Parsing** | Accurate AST-based symbol extraction for 20+ languages |
 | **Knowledge Graph** | Track function calls, class inheritance, and dependencies |
 | **Hybrid Search** | BM25 lexical + semantic vector search |
 | **Incremental Index** | Fast updates - only re-parse changed files |
-| **State Persistence** | 80% faster re-indexing with file hash caching (v2.5+) |
 | **MCP Server** | Model Context Protocol server for AI assistants |
 | **Watch Mode** | Real-time index updates on file changes |
 | **Universal Output** | Single UCE.md file works with Claude, Cursor, Copilot, any LLM |
@@ -201,6 +196,9 @@ Runs in foreground with live output.
 | `uce diff` | Show changes since last index |
 | `uce hook` | Install git pre-commit hook for auto-indexing |
 | `uce daemon` | Start/stop background file watcher |
+| `uce share` | **NEW v4.0** - Export context bundle for team sharing |
+| `uce share-import <bundle>` | **NEW v4.0** - Import context bundle |
+| `uce share-info <bundle>` | **NEW v4.0** - Show bundle information |
 
 ### Examples
 
@@ -233,6 +231,12 @@ npx universal-context-engine install --assistant claude --global  # Global Claud
 npx universal-context-engine hook                 # Install git pre-commit hook
 npx universal-context-engine daemon               # Start background watcher
 npx universal-context-engine daemon --stop        # Stop background watcher
+
+# Context sharing (v4.0+)
+npx uce share -o team-context.uce         # Export context bundle
+npx uce share-import team-context.uce     # Import teammate's context
+npx uce share-info team-context.uce       # View bundle info
+npx uce share-info --diff other.uce       # Compare two bundles
 ```
 
 ## Configuration
@@ -374,7 +378,7 @@ Add to your MCP configuration:
 
 | Tool | Description |
 |------|-------------|
-| `uce_ask` | **NEW v2.6** - Ask natural language questions about the codebase |
+| `uce_ask` | Ask natural language questions about the codebase |
 | `uce_get_context` | Get relevant context for a query |
 | `uce_search` | Search symbols |
 | `uce_find_related` | Find related code |
@@ -383,6 +387,15 @@ Add to your MCP configuration:
 | `uce_get_dependencies` | Get file dependencies |
 | `uce_graph_stats` | Knowledge graph statistics |
 | `uce_health` | Server health check |
+| `uce_get_library_docs` | **NEW v4.0** - Get library documentation |
+| `uce_sequential_think` | **NEW v4.0** - Multi-step reasoning engine |
+| `uce_search_history` | **NEW v4.0** - Search Q&A session history |
+| `uce_get_file_discussion` | **NEW v4.0** - Get file discussion history |
+| `uce_get_session_summary` | **NEW v4.0** - Get/generate session summaries |
+| `uce_memory_stats` | **NEW v4.0** - Memory engine statistics |
+| `uce_export_context` | **NEW v4.0** - Export context bundle |
+| `uce_import_context` | **NEW v4.0** - Import context bundle |
+| `uce_bundle_info` | **NEW v4.0** - Get bundle metadata |
 
 ## Auto-Indexing
 
@@ -434,28 +447,34 @@ After installing UCE integrations, use these slash commands:
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  Universal Context Engine v2.4 Architecture                  │
-├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐   │
-│  │ Tree-sitter  │───▶│ Incremental  │───▶│  Knowledge   │   │
-│  │   Parser     │    │   Indexer    │    │    Graph     │   │
-│  └──────────────┘    └──────────────┘    └──────────────┘   │
-│                                                 │            │
-│                                                 ▼            │
-│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐   │
-│  │   Context    │◀───│    Hybrid    │◀───│    BM25      │   │
-│  │   Engine     │    │  Retriever   │    │    Index     │   │
-│  └──────────────┘    └──────────────┘    └──────────────┘   │
-│         │                                                    │
-│         ▼                                                    │
-│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐   │
-│  │ MCP Server   │    │  Generator   │    │ Auto-Index   │   │
-│  │              │    │  (UCE.md)    │    │ Hook/Daemon  │   │
-│  └──────────────┘    └──────────────┘    └──────────────┘   │
-│                                                              │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│  Universal Context Engine v4.0 Architecture                          │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐           │
+│  │ Tree-sitter  │───▶│  cAST        │───▶│  Knowledge   │           │
+│  │   Parser     │    │  Chunker     │    │    Graph     │           │
+│  └──────────────┘    └──────────────┘    └──────────────┘           │
+│                                                 │                    │
+│                                                 ▼                    │
+│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐           │
+│  │   Context    │◀───│    Hybrid    │◀───│    BM25      │           │
+│  │   Engine     │    │  Retriever   │    │    Index     │           │
+│  └──────────────┘    └──────────────┘    └──────────────┘           │
+│         │                                                            │
+│         ▼                                                            │
+│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐           │
+│  │ MCP Server   │    │  Sequential  │    │  Persistent  │           │
+│  │  (18 tools)  │    │   Thinking   │    │   Memory     │           │
+│  └──────────────┘    └──────────────┘    └──────────────┘           │
+│         │                                       │                    │
+│         ▼                                       ▼                    │
+│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐           │
+│  │  Library     │    │   Context    │    │  Generator   │           │
+│  │    Docs      │    │   Sharing    │    │  (UCE.md)    │           │
+│  └──────────────┘    └──────────────┘    └──────────────┘           │
+│                                                                      │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Comparison

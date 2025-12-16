@@ -28,19 +28,42 @@ const loadedLanguages: Map<string, any> = new Map();
 let initialized = false;
 
 /**
- * Initialize tree-sitter parser
+ * Initialize tree-sitter parser with timeout protection
  */
 export async function initializeParser(): Promise<void> {
   if (initialized) return;
 
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
   try {
     const TreeSitter = await import('web-tree-sitter');
     Parser = TreeSitter.default || TreeSitter;
-    await Parser.init();
+
+    // Add timeout to prevent hanging on slow networks (v3.6.2 fix)
+    // Parser.init() downloads WASM files which can hang indefinitely
+    const INIT_TIMEOUT_MS = 10000; // 10 seconds
+
+    const timeoutPromise = new Promise((_, reject) => {
+      timeoutId = setTimeout(() => reject(new Error('Tree-sitter init timeout')), INIT_TIMEOUT_MS);
+    });
+
+    try {
+      await Promise.race([Parser.init(), timeoutPromise]);
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+    }
+
     parserInstance = new Parser();
     initialized = true;
-  } catch {
-    // Tree-sitter not available, will use regex fallback
+  } catch (error) {
+    // Tree-sitter not available or timed out, will use regex fallback
+    // Log for debugging but don't fail - regex parsing works fine
+    if (process.env.DEBUG) {
+      console.warn('Tree-sitter initialization failed, using regex fallback:', error);
+    }
+    if (timeoutId) clearTimeout(timeoutId);
+    Parser = null;
+    parserInstance = null;
     initialized = true;
   }
 }
@@ -170,16 +193,20 @@ export class TreeSitterParser {
     const startTime = performance.now();
     const extension = path.extname(filePath);
     const langConfig = getLanguageByExtension(extension);
+    const debug = process.env.DEBUG === '1';
 
     if (!langConfig) {
       return this.createEmptyResult(filePath, 'unknown', startTime);
     }
 
     // Initialize parser if needed
+    if (debug) console.log(`[PARSE] Initializing parser for ${filePath}...`);
     await initializeParser();
+    if (debug) console.log(`[PARSE] Parser initialized. Parser=${!!Parser}, instance=${!!parserInstance}`);
 
     // Try tree-sitter first
     if (Parser && parserInstance) {
+      if (debug) console.log(`[PARSE] Loading tree-sitter language for ${langConfig.id}...`);
       const language = await getLanguage(langConfig.id);
       if (language) {
         try {
@@ -193,7 +220,10 @@ export class TreeSitterParser {
     }
 
     // Fallback to regex-based parsing
-    return this.parseWithRegex(filePath, content, langConfig, startTime);
+    if (debug) console.log(`[PARSE] Using regex fallback for ${filePath}...`);
+    const result = this.parseWithRegex(filePath, content, langConfig, startTime);
+    if (debug) console.log(`[PARSE] Regex parsing complete for ${filePath}`);
+    return result;
   }
 
   /**
@@ -332,6 +362,7 @@ export class TreeSitterParser {
     langConfig: LanguageConfig,
     startTime: number
   ): ParseResult {
+    const debug = process.env.DEBUG === '1';
     const symbols: Symbol[] = [];
     const imports: Import[] = [];
     const chunks: SemanticChunk[] = [];
@@ -339,30 +370,38 @@ export class TreeSitterParser {
     const patterns = LANGUAGE_PATTERNS[langConfig.id];
     if (patterns) {
       // Extract functions
+      if (debug) console.log(`[REGEX] Extracting functions from ${filePath}...`);
       this.extractWithRegex(content, patterns.function, 'function', symbols);
 
       // Extract classes
+      if (debug) console.log(`[REGEX] Extracting classes...`);
       this.extractWithRegex(content, patterns.class, 'class', symbols);
 
       // Extract interfaces
       if (patterns.interface) {
+        if (debug) console.log(`[REGEX] Extracting interfaces...`);
         this.extractWithRegex(content, patterns.interface, 'interface', symbols);
       }
 
       // Extract types
       if (patterns.type) {
+        if (debug) console.log(`[REGEX] Extracting types...`);
         this.extractWithRegex(content, patterns.type, 'type', symbols);
       }
 
       // Extract constants
+      if (debug) console.log(`[REGEX] Extracting constants...`);
       this.extractWithRegex(content, patterns.constant, 'constant', symbols);
 
       // Extract imports
+      if (debug) console.log(`[REGEX] Extracting imports...`);
       this.extractImportsWithRegex(content, patterns.import, langConfig.id, imports);
     }
 
     // Generate chunks
+    if (debug) console.log(`[REGEX] Generating ${symbols.length} chunks...`);
     chunks.push(...this.generateChunks(content, symbols, imports, langConfig, filePath));
+    if (debug) console.log(`[REGEX] Generated ${chunks.length} chunks`);
 
     return {
       filePath,
@@ -449,11 +488,14 @@ export class TreeSitterParser {
     langConfig: LanguageConfig,
     filePath: string
   ): SemanticChunk[] {
+    const debug = process.env.DEBUG === '1';
     const chunks: SemanticChunk[] = [];
     const lines = content.split('\n');
     const MAX_CHUNK_TOKENS = 500; // ~2000 chars
     const MIN_CHUNK_TOKENS = 50; // ~200 chars
     const usedLines = new Set<number>();
+
+    if (debug) console.log(`[CHUNK] Start: ${lines.length} lines, ${symbols.length} symbols`);
 
     // Helper: estimate tokens (4 chars per token average for code)
     const estimateTokens = (text: string) => Math.ceil(text.length / 4);
@@ -464,8 +506,10 @@ export class TreeSitterParser {
       const endLine = symbol.endLine; // 1-indexed, inclusive
 
       // Look for leading comments/documentation (up to 20 lines above)
-      const lookBackLines = Math.min(20, startLine);
-      for (let i = startLine - 1; i >= startLine - lookBackLines; i--) {
+      // IMPORTANT: Use fixed lookback limit to prevent runaway loop (v3.6.2 fix)
+      const lookBackLimit = Math.min(20, startLine);
+      const loopEndLine = startLine - lookBackLimit; // Fixed end point - don't use startLine in loop condition!
+      for (let i = startLine - 1; i >= loopEndLine; i--) {
         const line = lines[i]?.trim() || '';
         if (line.startsWith('//') || line.startsWith('/*') || line.startsWith('*') ||
             line.startsWith('#') || line.startsWith('"""') || line.startsWith("'''") ||
@@ -561,6 +605,7 @@ export class TreeSitterParser {
     const topLevelSymbols = symbols.filter((s) => !s.parent);
 
     for (const symbol of topLevelSymbols) {
+
       const { content: symbolContent, startLine, endLine } = getSymbolContent(symbol);
       const tokens = estimateTokens(symbolContent);
 

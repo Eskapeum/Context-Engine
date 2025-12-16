@@ -70,8 +70,17 @@ site/
     }
 
     // Run initial index with enhanced stats (v2.5+)
-    const engine = new ContextEngine({ projectRoot, autoIndex: false });
+    // v3.6.2: Added progress logging to help diagnose slow indexing
+    const engine = new ContextEngine({ projectRoot, autoIndex: false, enableEmbeddings: false });
+
+    if (!options.silent) {
+      console.log('⏳ Initializing parser...');
+    }
     await engine.initialize();
+
+    if (!options.silent) {
+      console.log('⏳ Scanning and indexing files...');
+    }
     const result = await engine.index();
 
     if (!options.silent) {
@@ -80,6 +89,9 @@ site/
     }
 
     // Generate context file (UCE.md only by default)
+    if (!options.silent) {
+      console.log('⏳ Generating context files...');
+    }
     const indexer = new Indexer({ projectRoot });
     const index = indexer.loadIndex();
     if (index) {
@@ -91,7 +103,12 @@ site/
         console.log('\n📁 Index stored in .uce/');
         console.log('\n💡 Tip: Commit UCE.md to share context with your team!');
       }
+    } else if (!options.silent) {
+      console.log('⚠️  No index found - skipping context file generation');
     }
+
+    // v3.6.2: Explicit process exit to avoid hanging on cleanup
+    process.exit(0);
   });
 
 // ============================================================================

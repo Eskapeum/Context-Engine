@@ -261,8 +261,10 @@ export class IncrementalIndexer {
   async index(): Promise<ProjectIndex> {
     await this.initialize();
     const startTime = performance.now();
+    const debug = process.env.DEBUG === '1';
 
     // Get current git branch info
+    if (debug) console.log('[DEBUG] Getting git branch info...');
     const gitInfo = this.config.enableGitBranch ? this.getGitBranchInfo() : this.getDefaultGitInfo();
 
     // Check if we need to invalidate due to branch switch
@@ -272,11 +274,15 @@ export class IncrementalIndexer {
     }
 
     // Discover all files
+    if (debug) console.log('[DEBUG] Discovering files...');
     const currentFiles = await this.discoverFiles();
+    if (debug) console.log(`[DEBUG] Found ${currentFiles.length} files`);
     const currentFileSet = new Set(currentFiles);
 
     // Determine changes
+    if (debug) console.log('[DEBUG] Detecting changes...');
     const changes = this.detectChanges(currentFiles);
+    if (debug) console.log(`[DEBUG] Changes: ${changes.added.length} added, ${changes.modified.length} modified, ${changes.removed.length} removed`);
 
     // Create new index or update existing
     if (!this.projectIndex) {
@@ -299,14 +305,27 @@ export class IncrementalIndexer {
       }
     }
 
-    // Process files in parallel batches
-    const BATCH_SIZE = 50;
+    // Process files in sequential batches with progress (v3.6.2)
+    // Sequential processing allows individual file timeouts to work
+    if (debug) console.log(`[DEBUG] Processing ${toProcess.length} files...`);
+    const BATCH_SIZE = 10; // Smaller batches for better progress reporting
     for (let i = 0; i < toProcess.length; i += BATCH_SIZE) {
       const batch = toProcess.slice(i, i + BATCH_SIZE);
-      await Promise.all(batch.map((file) => this.indexFile(file)));
+      if (debug) console.log(`[DEBUG] Batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(toProcess.length / BATCH_SIZE)}`);
+
+      // Process batch sequentially to allow timeouts to fire
+      for (const file of batch) {
+        if (debug) process.stdout.write(`[DEBUG]   → ${file}...`);
+        const fileStart = performance.now();
+        await this.indexFile(file);
+        if (debug) console.log(` ${(performance.now() - fileStart).toFixed(0)}ms`);
+        // Yield to event loop between files
+        await new Promise((resolve) => setImmediate(resolve));
+      }
     }
 
     // Update dependency graphs
+    if (debug) console.log('[DEBUG] Rebuilding dependency graph...');
     this.rebuildDependencyGraph();
 
     // Update stats with change tracking
@@ -318,7 +337,9 @@ export class IncrementalIndexer {
     this.projectIndex.stats.indexTime = performance.now() - startTime;
 
     // Save to cache
+    if (debug) console.log('[DEBUG] Saving cache...');
     await this.saveCachedIndex();
+    if (debug) console.log('[DEBUG] Index complete');
 
     return this.projectIndex;
   }
@@ -500,11 +521,27 @@ export class IncrementalIndexer {
     const allExtensions = Object.values(LANGUAGE_REGISTRY).flatMap((c) => c.extensions);
     const patterns = allExtensions.map((ext) => `**/*${ext}`);
 
-    const files = await glob(patterns, {
+    // v3.6.2: Add timeout and disable symlink following to prevent hangs
+    const GLOB_TIMEOUT_MS = 60000; // 60 seconds max for file discovery
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+    const globPromise = glob(patterns, {
       cwd: this.config.projectRoot,
       nodir: true,
-      ignore: ['**/node_modules/**', '**/.git/**'],
+      follow: false, // Don't follow symlinks - prevents infinite loops
+      ignore: ['**/node_modules/**', '**/.git/**', '**/.uce/**', '**/.context/**'],
     });
+
+    const timeoutPromise = new Promise<string[]>((_, reject) => {
+      timeoutId = setTimeout(() => reject(new Error('File discovery timeout - repository may be too large or contain symlink loops')), GLOB_TIMEOUT_MS);
+    });
+
+    let files: string[];
+    try {
+      files = await Promise.race([globPromise, timeoutPromise]);
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+    }
 
     return files.filter((f) => !this.ig.ignores(f));
   }
@@ -598,8 +635,21 @@ export class IncrementalIndexer {
       const content = fs.readFileSync(fullPath, 'utf-8');
       const hash = crypto.createHash('sha256').update(content).digest('hex');
 
-      // Parse the file
-      const parseResult = await this.parser.parse(relativePath, content);
+      // Parse the file with timeout protection (v3.6.2)
+      const FILE_PARSE_TIMEOUT_MS = 5000; // 5 seconds per file max
+      let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+      const parsePromise = this.parser.parse(relativePath, content);
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error(`Parse timeout: ${relativePath}`)), FILE_PARSE_TIMEOUT_MS);
+      });
+
+      let parseResult;
+      try {
+        parseResult = await Promise.race([parsePromise, timeoutPromise]);
+      } finally {
+        if (timeoutId) clearTimeout(timeoutId);
+      }
 
       // Get language
       const ext = path.extname(relativePath);
@@ -629,8 +679,8 @@ export class IncrementalIndexer {
       // Store in index
       this.projectIndex!.files.set(relativePath, fileIndex);
       this.fileHashes.set(relativePath, hash);
-    } catch (error) {
-      // Silently skip files that can't be indexed
+    } catch {
+      // Silently skip files that can't be indexed (timeout, parse error, etc.)
     }
   }
 

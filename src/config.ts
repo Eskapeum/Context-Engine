@@ -155,6 +155,73 @@ export interface UCEConfig {
     /** Custom instructions (overrides default) */
     instructions?: string;
   };
+
+  /** Library documentation configuration (v4.0+) */
+  libraryDocs?: {
+    /** Enable library docs feature */
+    enabled?: boolean;
+    /** Prefer local extraction over cache */
+    preferLocal?: boolean;
+    /** Cache TTL in milliseconds (default: 7 days) */
+    cacheTTL?: number;
+    /** Auto cleanup expired cache entries */
+    autoCleanup?: boolean;
+  };
+
+  /** Sequential thinking configuration (v4.0+) */
+  thinking?: {
+    /** Enable sequential thinking feature */
+    enabled?: boolean;
+    /** Maximum number of thoughts per session */
+    maxThoughts?: number;
+    /** Allow thought revision */
+    allowRevision?: boolean;
+    /** Allow branching for alternative exploration */
+    allowBranching?: boolean;
+    /** Maximum branches to explore */
+    maxBranches?: number;
+  };
+
+  /** Knowledge graph configuration (v4.0+) */
+  graph?: {
+    /** Enable query cache */
+    enableCache?: boolean;
+    /** Cache TTL in milliseconds (default: 5 minutes) */
+    cacheTTLMs?: number;
+    /** Enable cycle detection */
+    enableCycleDetection?: boolean;
+    /** Enable symbol-level dependencies */
+    enableSymbolTracking?: boolean;
+  };
+
+  /** Persistent memory configuration (v4.0+) */
+  memory?: {
+    /** Enable persistent memory */
+    enabled?: boolean;
+    /** Session retention in days (default: 30) */
+    sessionRetentionDays?: number;
+    /** Auto-summarize sessions */
+    autoSummarize?: boolean;
+    /** Maximum sessions to retain */
+    maxSessions?: number;
+  };
+
+  /** Context sharing configuration (v4.0+) */
+  sharing?: {
+    /** Enable context sharing features */
+    enabled?: boolean;
+    /** Default export components */
+    defaultExportComponents?: ('index' | 'graph' | 'docs' | 'memory')[];
+    /** Privacy settings */
+    privacy?: {
+      /** Patterns to exclude from export */
+      excludePatterns?: string[];
+      /** Anonymize symbol names in export */
+      anonymizeSymbols?: boolean;
+      /** Exclude session memory from export */
+      excludeMemory?: boolean;
+    };
+  };
 }
 
 /**
@@ -224,6 +291,40 @@ export const DEFAULT_CONFIG: Required<UCEConfig> = {
   personality: {
     enabled: true, // Enabled by default as per user preference
     name: 'UCE Childhood Friend',
+  },
+  libraryDocs: {
+    enabled: true,
+    preferLocal: true,
+    cacheTTL: 7 * 24 * 60 * 60 * 1000, // 7 days
+    autoCleanup: true,
+  },
+  thinking: {
+    enabled: true,
+    maxThoughts: 10,
+    allowRevision: true,
+    allowBranching: false,
+    maxBranches: 3,
+  },
+  graph: {
+    enableCache: true,
+    cacheTTLMs: 5 * 60 * 1000, // 5 minutes
+    enableCycleDetection: true,
+    enableSymbolTracking: true,
+  },
+  memory: {
+    enabled: false, // Disabled by default until fully implemented
+    sessionRetentionDays: 30,
+    autoSummarize: true,
+    maxSessions: 100,
+  },
+  sharing: {
+    enabled: true,
+    defaultExportComponents: ['index', 'graph', 'docs'],
+    privacy: {
+      excludePatterns: ['**/.env*', '**/secrets/**', '**/*.key'],
+      anonymizeSymbols: false,
+      excludeMemory: true,
+    },
   },
 };
 
@@ -341,6 +442,30 @@ function mergeConfig(userConfig: Partial<UCEConfig>): UCEConfig {
     personality: {
       ...DEFAULT_CONFIG.personality,
       ...userConfig.personality,
+    },
+    libraryDocs: {
+      ...DEFAULT_CONFIG.libraryDocs,
+      ...userConfig.libraryDocs,
+    },
+    thinking: {
+      ...DEFAULT_CONFIG.thinking,
+      ...userConfig.thinking,
+    },
+    graph: {
+      ...DEFAULT_CONFIG.graph,
+      ...userConfig.graph,
+    },
+    memory: {
+      ...DEFAULT_CONFIG.memory,
+      ...userConfig.memory,
+    },
+    sharing: {
+      ...DEFAULT_CONFIG.sharing,
+      ...userConfig.sharing,
+      privacy: {
+        ...DEFAULT_CONFIG.sharing.privacy,
+        ...userConfig.sharing?.privacy,
+      },
     },
   };
 }

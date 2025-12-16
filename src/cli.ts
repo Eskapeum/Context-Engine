@@ -14,6 +14,7 @@ import { ContextEngine } from './context-engine.js';
 import { FileWatcher } from './core/watcher.js';
 import { IncrementalIndexer } from './core/incremental-indexer.js';
 import { KnowledgeGraph, GraphBuilder } from './graph/index.js';
+import { ContextExporter, ContextImporter } from './sharing/index.js';
 import { loadConfig, validateConfig, generateDefaultConfig, type UCEConfig } from './config.js';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -408,6 +409,188 @@ program
     const outputPath = path.resolve(options.output);
     fs.writeFileSync(outputPath, JSON.stringify(index, null, 2));
     console.log(`✅ Exported index to ${outputPath}`);
+  });
+
+// ============================================================================
+// SHARE COMMAND (Context Sharing for Teams)
+// ============================================================================
+
+program
+  .command('share')
+  .description('Export context bundle for team sharing')
+  .option('-p, --path <path>', 'Project path', process.cwd())
+  .option('-o, --output <file>', 'Output bundle file', 'context.uce')
+  .option('--include <components>', 'Components to include (comma-separated): index,graph,libraryDocs,summaries')
+  .option('--exclude <components>', 'Components to exclude (comma-separated)')
+  .option('--compress', 'Compress the bundle (default: true)', true)
+  .option('--no-compress', 'Do not compress the bundle')
+  .option('--anonymize', 'Anonymize symbol names')
+  .option('--exclude-memory', 'Exclude session history from export')
+  .action(async (options) => {
+    const projectRoot = path.resolve(options.path);
+    const outputPath = path.resolve(options.output);
+
+    console.log(`\n📦 Exporting context bundle from ${projectRoot}...\n`);
+
+    const exporter = new ContextExporter(projectRoot);
+
+    try {
+      const result = await exporter.export(outputPath, {
+        components: options.include?.split(',') as any[],
+        excludeComponents: options.exclude?.split(',') as any[],
+        compress: options.compress,
+        privacy: {
+          anonymizeSymbols: options.anonymize || false,
+          excludeMemory: options.excludeMemory || false,
+        },
+      });
+
+      console.log(`✅ Exported context bundle to ${outputPath}`);
+      console.log(`\n📊 Bundle Statistics:`);
+      console.log(`   Version: ${result.version}`);
+      console.log(`   Files: ${result.metadata.fileCount}`);
+      console.log(`   Symbols: ${result.metadata.symbolCount}`);
+      console.log(`   Compressed: ${result.metadata.compressed ? 'Yes' : 'No'}`);
+      console.log(`\n   Components included:`);
+      for (const comp of result.components) {
+        if (comp.present) {
+          console.log(`     ✓ ${comp.name} (${comp.itemCount || 0} items)`);
+        }
+      }
+      console.log(`\n💡 Share this file with your team or commit to git.`);
+    } catch (error) {
+      console.error(`❌ Export failed: ${error}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('share-import <bundle>')
+  .description('Import context bundle from teammate')
+  .option('-p, --path <path>', 'Project path', process.cwd())
+  .option('--merge', 'Merge with existing context (default: replace)')
+  .option('--overwrite', 'Overwrite conflicting components')
+  .option('--dry-run', 'Preview changes without applying')
+  .option('--components <components>', 'Only import specific components (comma-separated)')
+  .action(async (bundle, options) => {
+    const projectRoot = path.resolve(options.path);
+    const bundlePath = path.resolve(bundle);
+
+    console.log(`\n📥 Importing context bundle from ${bundlePath}...\n`);
+
+    const importer = new ContextImporter(projectRoot);
+
+    try {
+      const result = await importer.import(bundlePath, {
+        merge: options.merge || false,
+        overwrite: options.overwrite || false,
+        dryRun: options.dryRun || false,
+        components: options.components?.split(',') as any[],
+      });
+
+      if (options.dryRun) {
+        console.log('🔍 Dry run - no changes applied\n');
+      }
+
+      if (result.success) {
+        console.log(`✅ Import ${options.dryRun ? 'would be' : 'was'} successful`);
+        console.log(`\n📊 Import Summary:`);
+        console.log(`   Files: ${result.filesImported}`);
+        console.log(`   Symbols: ${result.symbolsImported}`);
+        console.log(`   Components: ${result.importedComponents.join(', ') || 'none'}`);
+
+        if (result.conflicts.length > 0) {
+          console.log(`\n⚠️  Conflicts (${result.conflicts.length}):`);
+          for (const conflict of result.conflicts) {
+            console.log(`     ${conflict.component}: ${conflict.description} → ${conflict.resolution || 'unresolved'}`);
+          }
+        }
+      } else {
+        console.log(`❌ Import failed:`);
+        for (const error of result.errors) {
+          console.log(`   - ${error}`);
+        }
+        process.exit(1);
+      }
+    } catch (error) {
+      console.error(`❌ Import failed: ${error}`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('share-info <bundle>')
+  .description('Show information about a context bundle')
+  .option('--diff <other>', 'Compare with another bundle')
+  .action(async (bundle, options) => {
+    const bundlePath = path.resolve(bundle);
+
+    const importer = new ContextImporter(process.cwd());
+
+    try {
+      if (options.diff) {
+        // Compare two bundles
+        const otherPath = path.resolve(options.diff);
+        console.log(`\n📊 Comparing bundles:\n`);
+        console.log(`   Bundle 1: ${bundlePath}`);
+        console.log(`   Bundle 2: ${otherPath}\n`);
+
+        const diff = await importer.diff(bundlePath, otherPath);
+
+        console.log(`Version differs: ${diff.versionDiff ? 'Yes' : 'No'}`);
+        console.log(`\nCreation dates:`);
+        console.log(`   Bundle 1: ${diff.createdDiff.bundle1}`);
+        console.log(`   Bundle 2: ${diff.createdDiff.bundle2}`);
+
+        console.log(`\nComponent differences:`);
+        for (const [name, compDiff] of Object.entries(diff.componentsDiff)) {
+          const status = compDiff.inFirst && compDiff.inSecond
+            ? `both (diff: ${compDiff.itemCountDiff > 0 ? '+' : ''}${compDiff.itemCountDiff})`
+            : compDiff.inFirst
+              ? 'only in bundle 1'
+              : compDiff.inSecond
+                ? 'only in bundle 2'
+                : 'neither';
+          console.log(`   ${name}: ${status}`);
+        }
+
+        console.log(`\nMetadata differences:`);
+        console.log(`   Files: ${diff.metadataDiff.fileCount > 0 ? '+' : ''}${diff.metadataDiff.fileCount}`);
+        console.log(`   Symbols: ${diff.metadataDiff.symbolCount > 0 ? '+' : ''}${diff.metadataDiff.symbolCount}`);
+      } else {
+        // Show single bundle info
+        const info = await importer.preview(bundlePath);
+
+        if (!info) {
+          console.log(`❌ Could not read bundle: ${bundlePath}`);
+          process.exit(1);
+        }
+
+        console.log(`\n📦 Context Bundle: ${path.basename(bundlePath)}\n`);
+        console.log(`   Version: ${info.version}`);
+        console.log(`   Created: ${info.created}`);
+        if (info.source?.projectName) {
+          console.log(`   Project: ${info.source.projectName}`);
+        }
+
+        console.log(`\n📊 Statistics:`);
+        console.log(`   Files: ${info.metadata.fileCount}`);
+        console.log(`   Symbols: ${info.metadata.symbolCount}`);
+        console.log(`   Compressed: ${info.metadata.compressed ? 'Yes' : 'No'}`);
+
+        console.log(`\n📋 Components:`);
+        for (const comp of info.components) {
+          const status = comp.present ? '✓' : '✗';
+          const count = comp.itemCount !== undefined ? ` (${comp.itemCount} items)` : '';
+          console.log(`   ${status} ${comp.name}${count}`);
+        }
+
+        console.log(`\n💡 Import with: uce share-import ${bundle}`);
+      }
+    } catch (error) {
+      console.error(`❌ Failed to read bundle: ${error}`);
+      process.exit(1);
+    }
   });
 
 // ============================================================================

@@ -30,6 +30,10 @@ import {
 } from './personality.js';
 import type { Symbol, SemanticChunk } from '../parser/types.js';
 import type { EdgeType } from '../graph/knowledge-graph.js';
+import { DocsManager, type LibraryDocResult } from '../library-docs/index.js';
+import { SequentialThinker, type ThinkingResult, type ThoughtType } from '../thinking/index.js';
+import { MemoryEngine, type MemoryStats } from '../memory/index.js';
+import { ContextExporter, ContextImporter, type BundleInfo, type BundleComponentType } from '../sharing/index.js';
 
 // ============================================================================
 // MCP TYPES
@@ -86,12 +90,45 @@ export class MCPServer {
   private watcher: FileWatcher | null = null;
   private qaEngine: QAEngine | null = null;
   private personality: Partial<UCEPersonality>;
+  private docsManager: DocsManager | null = null;
+  private thinker: SequentialThinker | null = null;
+  private memoryEngine: MemoryEngine | null = null;
+  private exporter: ContextExporter | null = null;
+  private importer: ContextImporter | null = null;
 
   constructor(projectRoot: string, personality?: Partial<UCEPersonality>) {
     this.projectRoot = path.resolve(projectRoot);
     this.indexer = new IncrementalIndexer({ projectRoot: this.projectRoot });
     // Personality enabled by default
     this.personality = personality ?? { enabled: true };
+  }
+
+  /**
+   * Ensure memory engine is initialized
+   */
+  private async ensureMemory(): Promise<MemoryEngine> {
+    if (this.memoryEngine) return this.memoryEngine;
+    this.memoryEngine = new MemoryEngine(this.projectRoot);
+    await this.memoryEngine.initialize();
+    return this.memoryEngine;
+  }
+
+  /**
+   * Ensure exporter is initialized
+   */
+  private ensureExporter(): ContextExporter {
+    if (this.exporter) return this.exporter;
+    this.exporter = new ContextExporter(this.projectRoot);
+    return this.exporter;
+  }
+
+  /**
+   * Ensure importer is initialized
+   */
+  private ensureImporter(): ContextImporter {
+    if (this.importer) return this.importer;
+    this.importer = new ContextImporter(this.projectRoot);
+    return this.importer;
   }
 
   /**
@@ -553,6 +590,281 @@ export class MCPServer {
           },
         },
       },
+      {
+        name: 'uce_get_library_docs',
+        description:
+          'Get documentation for a library from local node_modules. Extracts API reference from .d.ts files. Returns function signatures, types, interfaces, and JSDoc comments.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            library: {
+              type: 'string',
+              description: 'Library name (e.g., "lodash", "react", "@types/node")',
+            },
+            version: {
+              type: 'string',
+              description: 'Specific version to get docs for (optional, uses installed version)',
+            },
+            forceRefresh: {
+              type: 'boolean',
+              description: 'Force refresh from source, bypassing cache (default: false)',
+            },
+          },
+          required: ['library'],
+        },
+      },
+      {
+        name: 'uce_list_library_docs',
+        description:
+          'List all libraries with cached documentation or available in node_modules.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            cached: {
+              type: 'boolean',
+              description: 'If true, list only cached libraries. Otherwise lists all available.',
+            },
+          },
+        },
+      },
+      {
+        name: 'uce_search_library_api',
+        description:
+          'Search for API entries across all cached library documentation. Find functions, types, or interfaces by name or description.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            query: {
+              type: 'string',
+              description: 'Search query (name or description)',
+            },
+            types: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'Filter by API types: function, class, interface, type, constant',
+            },
+            maxResults: {
+              type: 'number',
+              description: 'Maximum results to return (default: 20)',
+            },
+          },
+          required: ['query'],
+        },
+      },
+      {
+        name: 'uce_sequential_think',
+        description:
+          'Use structured multi-step reasoning to analyze a problem. Supports revision, branching, and confidence tracking. Returns a chain of thoughts leading to a conclusion.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            problem: {
+              type: 'string',
+              description: 'The problem or question to analyze',
+            },
+            maxThoughts: {
+              type: 'number',
+              description: 'Maximum number of thoughts (default: 10)',
+            },
+            allowRevision: {
+              type: 'boolean',
+              description: 'Allow revising previous thoughts (default: true)',
+            },
+            allowBranching: {
+              type: 'boolean',
+              description: 'Allow exploring alternative branches (default: false)',
+            },
+            style: {
+              type: 'string',
+              enum: ['analytical', 'exploratory', 'focused'],
+              description: 'Thinking style (default: analytical)',
+            },
+          },
+          required: ['problem'],
+        },
+      },
+      {
+        name: 'uce_add_thought',
+        description:
+          'Add a thought to an ongoing sequential thinking session. Use after uce_sequential_think to continue reasoning.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            content: {
+              type: 'string',
+              description: 'The thought content',
+            },
+            type: {
+              type: 'string',
+              enum: ['analysis', 'hypothesis', 'revision', 'verification', 'conclusion'],
+              description: 'Type of thought',
+            },
+            confidence: {
+              type: 'number',
+              description: 'Confidence level 0-1 (default: 0.5)',
+            },
+            revisesThought: {
+              type: 'number',
+              description: 'If this revises a previous thought, specify its number',
+            },
+            branchFromThought: {
+              type: 'number',
+              description: 'If branching, specify the thought to branch from',
+            },
+            branchId: {
+              type: 'string',
+              description: 'Branch identifier for branching',
+            },
+          },
+          required: ['content', 'type'],
+        },
+      },
+      {
+        name: 'uce_finalize_thinking',
+        description:
+          'Finalize the current thinking session and get the complete result with conclusion and metadata.',
+        inputSchema: {
+          type: 'object',
+          properties: {},
+        },
+      },
+      // ========================================================================
+      // Memory Tools (v4.0+)
+      // ========================================================================
+      {
+        name: 'uce_search_history',
+        description:
+          'Search through past Q&A history. Find previous discussions about files, symbols, or topics.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            query: {
+              type: 'string',
+              description: 'Search query for finding past discussions',
+            },
+            files: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'Filter by specific files discussed',
+            },
+            symbols: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'Filter by specific symbols discussed',
+            },
+            limit: {
+              type: 'number',
+              description: 'Maximum results to return (default: 20)',
+            },
+          },
+          required: ['query'],
+        },
+      },
+      {
+        name: 'uce_get_file_discussion',
+        description:
+          'Get all past discussions about a specific file. Useful for understanding previous context and decisions.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            file: {
+              type: 'string',
+              description: 'File path to get discussions for',
+            },
+          },
+          required: ['file'],
+        },
+      },
+      {
+        name: 'uce_get_session_summary',
+        description:
+          'Get or generate a summary of the current or a specific session. Returns topics, key findings, and files discussed.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            sessionId: {
+              type: 'string',
+              description: 'Session ID (optional, defaults to current session)',
+            },
+          },
+        },
+      },
+      {
+        name: 'uce_memory_stats',
+        description: 'Get statistics about stored sessions and Q&A history.',
+        inputSchema: {
+          type: 'object',
+          properties: {},
+        },
+      },
+      // ========================================================================
+      // Sharing Tools (v4.0+)
+      // ========================================================================
+      {
+        name: 'uce_export_context',
+        description:
+          'Export context as a shareable bundle. Use for team collaboration or backing up context.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            outputPath: {
+              type: 'string',
+              description: 'Path for the output bundle file',
+            },
+            components: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'Components to include: index, graph, libraryDocs, summaries',
+            },
+            compress: {
+              type: 'boolean',
+              description: 'Whether to compress the bundle (default: true)',
+            },
+            anonymize: {
+              type: 'boolean',
+              description: 'Anonymize symbol names for privacy',
+            },
+          },
+          required: ['outputPath'],
+        },
+      },
+      {
+        name: 'uce_import_context',
+        description:
+          'Import a context bundle from a teammate or backup. Supports merge and replace modes.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            bundlePath: {
+              type: 'string',
+              description: 'Path to the bundle file to import',
+            },
+            merge: {
+              type: 'boolean',
+              description: 'Merge with existing context instead of replacing',
+            },
+            dryRun: {
+              type: 'boolean',
+              description: 'Preview changes without applying them',
+            },
+          },
+          required: ['bundlePath'],
+        },
+      },
+      {
+        name: 'uce_bundle_info',
+        description: 'Get information about a context bundle without importing it.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            bundlePath: {
+              type: 'string',
+              description: 'Path to the bundle file',
+            },
+          },
+          required: ['bundlePath'],
+        },
+      },
     ];
 
     // Wrap tool descriptions with personality instructions if enabled (v3.6+)
@@ -669,6 +981,47 @@ export class MCPServer {
 
       case 'uce_detect_patterns':
         return this.handleDetectPatterns(args);
+
+      case 'uce_get_library_docs':
+        return this.handleGetLibraryDocs(args);
+
+      case 'uce_list_library_docs':
+        return this.handleListLibraryDocs(args);
+
+      case 'uce_search_library_api':
+        return this.handleSearchLibraryApi(args);
+
+      case 'uce_sequential_think':
+        return this.handleSequentialThink(args);
+
+      case 'uce_add_thought':
+        return this.handleAddThought(args);
+
+      case 'uce_finalize_thinking':
+        return this.handleFinalizeThinking();
+
+      // Memory tools (v4.0+)
+      case 'uce_search_history':
+        return this.handleSearchHistory(args);
+
+      case 'uce_get_file_discussion':
+        return this.handleGetFileDiscussion(args);
+
+      case 'uce_get_session_summary':
+        return this.handleGetSessionSummary(args);
+
+      case 'uce_memory_stats':
+        return this.handleMemoryStats();
+
+      // Sharing tools (v4.0+)
+      case 'uce_export_context':
+        return this.handleExportContext(args);
+
+      case 'uce_import_context':
+        return this.handleImportContext(args);
+
+      case 'uce_bundle_info':
+        return this.handleBundleInfo(args);
 
       default:
         throw new Error(`Unknown tool: ${name}`);
@@ -1543,6 +1896,187 @@ export class MCPServer {
     return result;
   }
 
+  // ============================================================================
+  // LIBRARY DOCS HANDLERS (v4.0+)
+  // ============================================================================
+
+  private async ensureDocsManager(): Promise<DocsManager> {
+    if (!this.docsManager) {
+      this.docsManager = new DocsManager({
+        projectRoot: this.projectRoot,
+        preferLocal: true,
+        autoCleanup: true,
+      });
+      await this.docsManager.init();
+    }
+    return this.docsManager;
+  }
+
+  private async handleGetLibraryDocs(args: Record<string, unknown>): Promise<{
+    success: boolean;
+    docs: LibraryDocResult | null;
+    error?: string;
+  }> {
+    const library = args.library as string;
+    const version = args.version as string | undefined;
+    const forceRefresh = (args.forceRefresh as boolean) || false;
+
+    try {
+      const manager = await this.ensureDocsManager();
+      const docs = await manager.getDocs(library, {
+        version,
+        forceRefresh,
+      });
+
+      if (!docs) {
+        return {
+          success: false,
+          docs: null,
+          error: `Library "${library}" not found in node_modules`,
+        };
+      }
+
+      return { success: true, docs };
+    } catch (error) {
+      return {
+        success: false,
+        docs: null,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
+
+  private async handleListLibraryDocs(args: Record<string, unknown>): Promise<{
+    cached: Array<{ library: string; version: string; cachedAt: string }>;
+    available: string[];
+  }> {
+    const cachedOnly = args.cached as boolean | undefined;
+
+    const manager = await this.ensureDocsManager();
+
+    const cached = await manager.listCached();
+    const available = cachedOnly ? [] : manager.listAvailable();
+
+    return { cached, available };
+  }
+
+  private async handleSearchLibraryApi(args: Record<string, unknown>): Promise<{
+    query: string;
+    results: Array<{
+      library: string;
+      entry: {
+        name: string;
+        type: string;
+        signature?: string;
+        description?: string;
+      };
+    }>;
+  }> {
+    const query = args.query as string;
+    const types = args.types as string[] | undefined;
+    const maxResults = (args.maxResults as number) || 20;
+
+    const manager = await this.ensureDocsManager();
+    const results = await manager.searchAPI(query, { maxResults, types });
+
+    return { query, results };
+  }
+
+  // ============================================================================
+  // SEQUENTIAL THINKING HANDLERS (v4.0+)
+  // ============================================================================
+
+  private async handleSequentialThink(args: Record<string, unknown>): Promise<{
+    sessionStarted: boolean;
+    problem: string;
+    suggestedNextType: string;
+    maxThoughts: number;
+  }> {
+    const problem = args.problem as string;
+    const maxThoughts = (args.maxThoughts as number) || 10;
+    const allowRevision = (args.allowRevision as boolean) ?? true;
+    const allowBranching = (args.allowBranching as boolean) ?? false;
+    const style = (args.style as 'analytical' | 'exploratory' | 'focused') || 'analytical';
+
+    // Create new thinker for this session
+    this.thinker = new SequentialThinker({
+      maxThoughts,
+      allowRevision,
+      allowBranching,
+      style,
+      autoRetrieveContext: true,
+      maxContextTokens: 2000,
+    });
+
+    // Set up context retriever
+    this.thinker.setContextRetriever(async (query: string, tokens: number) => {
+      const contextResult = await this.handleGetContext({ task: query, maxTokens: tokens });
+      return {
+        files: contextResult.chunks.map((c) => c.file),
+        symbols: [],
+        chunkIds: contextResult.chunks.map((_, i) => `chunk-${i}`),
+      };
+    });
+
+    await this.thinker.start(problem);
+
+    return {
+      sessionStarted: true,
+      problem,
+      suggestedNextType: this.thinker.suggestNextType(),
+      maxThoughts,
+    };
+  }
+
+  private async handleAddThought(args: Record<string, unknown>): Promise<{
+    thoughtAdded: boolean;
+    thoughtNumber: number;
+    suggestedNextType: string;
+    shouldContinue: boolean;
+    needsRevision: { needed: boolean; targetThought?: number; reason?: string };
+  }> {
+    if (!this.thinker) {
+      throw new Error('No thinking session active. Call uce_sequential_think first.');
+    }
+
+    const content = args.content as string;
+    const type = args.type as ThoughtType;
+    const confidence = (args.confidence as number) || 0.5;
+    const revisesThought = args.revisesThought as number | undefined;
+    const branchFromThought = args.branchFromThought as number | undefined;
+    const branchId = args.branchId as string | undefined;
+
+    const thought = await this.thinker.addThought({
+      content,
+      type,
+      confidence,
+      revisesThought,
+      branchFromThought,
+      branchId,
+    });
+
+    return {
+      thoughtAdded: true,
+      thoughtNumber: thought.number,
+      suggestedNextType: this.thinker.suggestNextType(),
+      shouldContinue: this.thinker.shouldContinue(),
+      needsRevision: this.thinker.needsRevision(),
+    };
+  }
+
+  private async handleFinalizeThinking(): Promise<ThinkingResult> {
+    if (!this.thinker) {
+      throw new Error('No thinking session active. Call uce_sequential_think first.');
+    }
+
+    const result = this.thinker.finalize();
+
+    // Clear the thinker for next session
+    this.thinker = null;
+
+    return result;
+  }
+
   private graphToDot(
     nodes: Array<{ id: string; name: string; type: string }>,
     edges: Array<{ source: string; target: string; type: string }>
@@ -1957,6 +2491,184 @@ export class MCPServer {
     }
 
     return parsedFiles;
+  }
+
+  // ============================================================================
+  // Memory Handlers (v4.0+)
+  // ============================================================================
+
+  private async handleSearchHistory(args: Record<string, unknown>): Promise<{
+    results: Array<{
+      question: string;
+      response: string;
+      timestamp: string;
+      filesReferenced: string[];
+      score: number;
+    }>;
+    totalMatches: number;
+  }> {
+    const query = args.query as string;
+    const files = args.files as string[] | undefined;
+    const symbols = args.symbols as string[] | undefined;
+    const limit = (args.limit as number) || 20;
+
+    const memory = await this.ensureMemory();
+    const result = await memory.search(query, {
+      files,
+      symbols,
+      limit,
+    });
+
+    return {
+      results: result.queries.map((q) => ({
+        question: q.question,
+        response: q.response.slice(0, 500) + (q.response.length > 500 ? '...' : ''),
+        timestamp: q.timestamp,
+        filesReferenced: q.filesReferenced,
+        score: result.scores.get(q.id) || 0,
+      })),
+      totalMatches: result.totalMatches,
+    };
+  }
+
+  private async handleGetFileDiscussion(args: Record<string, unknown>): Promise<{
+    file: string;
+    discussions: Array<{
+      question: string;
+      response: string;
+      timestamp: string;
+    }>;
+    totalDiscussions: number;
+  }> {
+    const file = args.file as string;
+
+    const memory = await this.ensureMemory();
+    const queries = await memory.getFileHistory(file);
+
+    return {
+      file,
+      discussions: queries.map((q) => ({
+        question: q.question,
+        response: q.response.slice(0, 500) + (q.response.length > 500 ? '...' : ''),
+        timestamp: q.timestamp,
+      })),
+      totalDiscussions: queries.length,
+    };
+  }
+
+  private async handleGetSessionSummary(args: Record<string, unknown>): Promise<{
+    sessionId: string;
+    topics: string[];
+    keyFindings: string[];
+    filesMentioned: string[];
+    symbolsMentioned: string[];
+    queryCount: number;
+  }> {
+    const sessionId = args.sessionId as string | undefined;
+
+    const memory = await this.ensureMemory();
+
+    if (sessionId) {
+      const summary = await memory.summarizeSession(sessionId);
+      return {
+        sessionId,
+        topics: summary.topics,
+        keyFindings: summary.keyFindings,
+        filesMentioned: summary.filesMentioned,
+        symbolsMentioned: summary.symbolsMentioned,
+        queryCount: summary.queryCount,
+      };
+    }
+
+    // Get current session summary
+    const session = memory.getCurrentSession();
+    const summary = await memory.summarizeSession(session.id);
+
+    return {
+      sessionId: session.id,
+      topics: summary.topics,
+      keyFindings: summary.keyFindings,
+      filesMentioned: summary.filesMentioned,
+      symbolsMentioned: summary.symbolsMentioned,
+      queryCount: summary.queryCount,
+    };
+  }
+
+  private async handleMemoryStats(): Promise<MemoryStats> {
+    const memory = await this.ensureMemory();
+    return memory.getStats();
+  }
+
+  // ============================================================================
+  // Sharing Handlers (v4.0+)
+  // ============================================================================
+
+  private async handleExportContext(args: Record<string, unknown>): Promise<{
+    success: boolean;
+    outputPath: string;
+    bundle: BundleInfo;
+  }> {
+    const outputPath = args.outputPath as string;
+    const components = args.components as string[] | undefined;
+    const compress = args.compress !== false;
+    const anonymize = args.anonymize === true;
+
+    const exporter = this.ensureExporter();
+    const bundle = await exporter.export(outputPath, {
+      include: components as BundleComponentType[] | undefined,
+      compress,
+      privacy: {
+        anonymizeSymbols: anonymize,
+        excludePatterns: [],
+        stripComments: false,
+        excludeMemory: false,
+        excludeFiles: [],
+      },
+    });
+
+    return {
+      success: true,
+      outputPath,
+      bundle,
+    };
+  }
+
+  private async handleImportContext(args: Record<string, unknown>): Promise<{
+    success: boolean;
+    filesImported: number;
+    symbolsImported: number;
+    components: string[];
+    conflicts: Array<{ component: string; description: string }>;
+    dryRun: boolean;
+  }> {
+    const bundlePath = args.bundlePath as string;
+    const merge = args.merge === true;
+    const dryRun = args.dryRun === true;
+
+    const importer = this.ensureImporter();
+    const result = await importer.import(bundlePath, {
+      merge,
+      dryRun,
+    });
+
+    return {
+      success: result.success,
+      filesImported: result.filesImported,
+      symbolsImported: result.symbolsImported,
+      components: result.importedComponents,
+      conflicts: result.conflicts.map((c) => ({
+        component: c.component,
+        description: c.description,
+      })),
+      dryRun,
+    };
+  }
+
+  private async handleBundleInfo(args: Record<string, unknown>): Promise<BundleInfo | null> {
+    const bundlePath = args.bundlePath as string;
+
+    const importer = this.ensureImporter();
+    return importer.preview(bundlePath);
   }
 }
 

@@ -17,8 +17,11 @@ import type {
   SemanticChunk,
   ParseResult,
   LanguageConfig,
+  ASTNode,
+  ASTNodeType,
+  ChunkConstraints,
 } from './types.js';
-import { getLanguageByExtension } from './types.js';
+import { getLanguageByExtension, DEFAULT_CHUNK_CONSTRAINTS } from './types.js';
 
 // Use dynamic import for tree-sitter to handle ESM/CJS issues
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -693,6 +696,582 @@ export class TreeSitterParser {
     }
 
     return chunks;
+  }
+
+  // ============================================================================
+  // cAST CHUNKING ALGORITHM (v4.0+)
+  // ============================================================================
+
+  /**
+   * Generate chunks using cAST (AST-based structural chunking) algorithm
+   *
+   * Algorithm:
+   * 1. Build AST hierarchy from symbols with non-whitespace sizes
+   * 2. Recursively break large nodes at semantic boundaries
+   * 3. Greedily merge small siblings while respecting size limits
+   * 4. Measure by non-whitespace characters (not lines/tokens)
+   */
+  generateChunksCAST(
+    content: string,
+    symbols: Symbol[],
+    imports: Import[],
+    langConfig: LanguageConfig,
+    filePath: string,
+    constraints: ChunkConstraints = DEFAULT_CHUNK_CONSTRAINTS
+  ): SemanticChunk[] {
+    const chunks: SemanticChunk[] = [];
+    const lines = content.split('\n');
+
+    // Build AST hierarchy
+    const astNodes = this.buildASTHierarchy(content, symbols, lines);
+
+    // Recursively break large nodes
+    const brokenNodes = this.recursivelyBreakNodes(astNodes, content, lines, constraints);
+
+    // Greedily merge small siblings
+    const mergedNodes = this.greedyMergeSiblings(brokenNodes, content, lines, constraints);
+
+    // Convert nodes to chunks
+    for (const node of mergedNodes) {
+      const nodeContent = content.substring(node.startByte, node.endByte);
+      const nodeSymbols = this.getSymbolsInRange(symbols, node.startLine, node.endLine);
+
+      chunks.push({
+        id: `${filePath}:${node.name || node.type}:${node.startLine}`,
+        content: nodeContent,
+        type: this.nodeTypeToChunkType(node.type),
+        filePath,
+        startLine: node.startLine,
+        endLine: node.endLine,
+        primarySymbol: node.name,
+        symbols: nodeSymbols.map((s) => s.name),
+        imports: this.getContextualImports(imports, nodeContent),
+        tokenCount: Math.ceil(nodeContent.length / 4), // Legacy compatibility
+        nonWhitespaceSize: node.nonWhitespaceSize,
+        metadata: {
+          language: langConfig.id,
+          filePath,
+          symbolKinds: nodeSymbols.map((s) => s.kind),
+          hasExports: nodeSymbols.some((s) => s.exported),
+          parentChain: node.metadata.parent ? [node.metadata.parent] : undefined,
+          contextualImports: this.getContextualImports(imports, nodeContent),
+          logicalBlockType: this.detectLogicalBlockType(nodeContent),
+        },
+      });
+    }
+
+    return chunks;
+  }
+
+  /**
+   * Build AST hierarchy from symbols with non-whitespace sizes
+   */
+  private buildASTHierarchy(content: string, symbols: Symbol[], lines: string[]): ASTNode[] {
+    const nodes: ASTNode[] = [];
+
+    // Sort symbols by line number
+    const sortedSymbols = [...symbols].sort((a, b) => a.line - b.line);
+
+    for (const symbol of sortedSymbols) {
+      // Calculate byte positions
+      const startByte = this.lineColumnToByte(content, symbol.line, symbol.column);
+      const endByte = this.lineColumnToByte(content, symbol.endLine, symbol.endColumn || lines[symbol.endLine - 1]?.length || 0);
+
+      // Include leading comments
+      const { adjustedStart, leadingComments } = this.findLeadingComments(
+        content,
+        lines,
+        symbol.line,
+        startByte
+      );
+
+      const nodeContent = content.substring(adjustedStart, endByte);
+
+      nodes.push({
+        type: this.symbolKindToNodeType(symbol.kind),
+        name: symbol.name,
+        startByte: adjustedStart,
+        endByte,
+        startLine: symbol.line - (startByte - adjustedStart > 0 ? this.countNewlines(content.substring(adjustedStart, startByte)) : 0),
+        endLine: symbol.endLine,
+        nonWhitespaceSize: this.countNonWhitespace(nodeContent),
+        children: [],
+        metadata: {
+          leadingComments: leadingComments.length > 0 ? leadingComments : undefined,
+          parent: symbol.parent,
+          exported: symbol.exported,
+          visibility: symbol.visibility,
+          decorators: symbol.decorators,
+        },
+      });
+    }
+
+    // Build parent-child relationships
+    return this.buildHierarchy(nodes);
+  }
+
+  /**
+   * Recursively break large nodes at semantic boundaries
+   */
+  private recursivelyBreakNodes(
+    nodes: ASTNode[],
+    content: string,
+    lines: string[],
+    constraints: ChunkConstraints
+  ): ASTNode[] {
+    const result: ASTNode[] = [];
+
+    for (const node of nodes) {
+      if (node.nonWhitespaceSize <= constraints.maxNonWhitespaceChars) {
+        // Node is small enough, keep as is (but process children)
+        if (node.children.length > 0) {
+          node.children = this.recursivelyBreakNodes(node.children, content, lines, constraints);
+        }
+        result.push(node);
+      } else {
+        // Node is too large, break at semantic boundaries
+        const brokenNodes = this.breakNodeAtBoundaries(node, content, lines, constraints);
+        result.push(...brokenNodes);
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Break a large node at semantic boundaries
+   */
+  private breakNodeAtBoundaries(
+    node: ASTNode,
+    content: string,
+    lines: string[],
+    constraints: ChunkConstraints
+  ): ASTNode[] {
+    const nodeContent = content.substring(node.startByte, node.endByte);
+
+    // Find semantic boundary patterns
+    const boundaries = this.findSemanticBoundaries(nodeContent, node.type);
+
+    if (boundaries.length === 0) {
+      // No semantic boundaries, split by size
+      return this.splitBySize(node, content, lines, constraints);
+    }
+
+    // Split at boundaries
+    const chunks: ASTNode[] = [];
+    let currentStart = 0;
+    let partIndex = 0;
+
+    for (const boundary of boundaries) {
+      if (boundary > currentStart) {
+        const partContent = nodeContent.substring(currentStart, boundary);
+        const partNonWS = this.countNonWhitespace(partContent);
+
+        if (partNonWS >= constraints.minNonWhitespaceChars) {
+          const partLines = partContent.split('\n').length;
+          chunks.push({
+            type: node.type,
+            name: node.name ? `${node.name}:part${partIndex}` : undefined,
+            startByte: node.startByte + currentStart,
+            endByte: node.startByte + boundary,
+            startLine: node.startLine + this.countNewlines(nodeContent.substring(0, currentStart)),
+            endLine: node.startLine + this.countNewlines(nodeContent.substring(0, currentStart)) + partLines - 1,
+            nonWhitespaceSize: partNonWS,
+            children: [],
+            metadata: {
+              ...node.metadata,
+              parent: node.name || node.metadata.parent,
+            },
+          });
+          partIndex++;
+        }
+      }
+      currentStart = boundary;
+    }
+
+    // Handle remaining content
+    if (currentStart < nodeContent.length) {
+      const partContent = nodeContent.substring(currentStart);
+      const partNonWS = this.countNonWhitespace(partContent);
+
+      if (partNonWS >= constraints.minNonWhitespaceChars) {
+        chunks.push({
+          type: node.type,
+          name: node.name ? `${node.name}:part${partIndex}` : undefined,
+          startByte: node.startByte + currentStart,
+          endByte: node.endByte,
+          startLine: node.startLine + this.countNewlines(nodeContent.substring(0, currentStart)),
+          endLine: node.endLine,
+          nonWhitespaceSize: partNonWS,
+          children: [],
+          metadata: {
+            ...node.metadata,
+            parent: node.name || node.metadata.parent,
+          },
+        });
+      }
+    }
+
+    // Recursively break chunks that are still too large
+    const finalChunks: ASTNode[] = [];
+    for (const chunk of chunks) {
+      if (chunk.nonWhitespaceSize > constraints.maxNonWhitespaceChars) {
+        finalChunks.push(...this.splitBySize(chunk, content, lines, constraints));
+      } else {
+        finalChunks.push(chunk);
+      }
+    }
+
+    return finalChunks;
+  }
+
+  /**
+   * Split a node by size when no semantic boundaries are found
+   */
+  private splitBySize(
+    node: ASTNode,
+    content: string,
+    _lines: string[],
+    constraints: ChunkConstraints
+  ): ASTNode[] {
+    const nodeContent = content.substring(node.startByte, node.endByte);
+    const nodeLines = nodeContent.split('\n');
+    const chunks: ASTNode[] = [];
+
+    // Calculate lines per chunk based on target size
+    const avgNonWSPerLine = node.nonWhitespaceSize / nodeLines.length;
+    const linesPerChunk = Math.max(1, Math.floor(constraints.targetSize / avgNonWSPerLine));
+
+    for (let i = 0; i < nodeLines.length; i += linesPerChunk) {
+      const chunkLines = nodeLines.slice(i, Math.min(i + linesPerChunk, nodeLines.length));
+      const chunkContent = chunkLines.join('\n');
+      const chunkNonWS = this.countNonWhitespace(chunkContent);
+
+      if (chunkNonWS >= constraints.minNonWhitespaceChars) {
+        const startLineOffset = this.countNewlines(nodeContent.substring(0, nodeLines.slice(0, i).join('\n').length + (i > 0 ? 1 : 0)));
+
+        chunks.push({
+          type: node.type,
+          name: node.name ? `${node.name}:part${Math.floor(i / linesPerChunk)}` : undefined,
+          startByte: node.startByte + nodeLines.slice(0, i).join('\n').length + (i > 0 ? 1 : 0),
+          endByte: node.startByte + nodeLines.slice(0, i + chunkLines.length).join('\n').length + (i > 0 ? 1 : 0),
+          startLine: node.startLine + startLineOffset,
+          endLine: node.startLine + startLineOffset + chunkLines.length - 1,
+          nonWhitespaceSize: chunkNonWS,
+          children: [],
+          metadata: {
+            ...node.metadata,
+            parent: node.name || node.metadata.parent,
+          },
+        });
+      }
+    }
+
+    return chunks;
+  }
+
+  /**
+   * Greedily merge small siblings while respecting size limits
+   */
+  private greedyMergeSiblings(
+    nodes: ASTNode[],
+    content: string,
+    _lines: string[],
+    constraints: ChunkConstraints
+  ): ASTNode[] {
+    if (nodes.length <= 1) return nodes;
+
+    const result: ASTNode[] = [];
+    let currentGroup: ASTNode[] = [];
+    let currentSize = 0;
+
+    for (const node of nodes) {
+      const canMerge =
+        currentGroup.length > 0 &&
+        currentSize + node.nonWhitespaceSize <= constraints.targetSize &&
+        this.areAdjacentNodes(currentGroup[currentGroup.length - 1], node, content);
+
+      if (canMerge) {
+        currentGroup.push(node);
+        currentSize += node.nonWhitespaceSize;
+      } else {
+        // Flush current group
+        if (currentGroup.length > 0) {
+          result.push(this.mergeNodes(currentGroup, content));
+        }
+        currentGroup = [node];
+        currentSize = node.nonWhitespaceSize;
+      }
+    }
+
+    // Flush remaining group
+    if (currentGroup.length > 0) {
+      result.push(this.mergeNodes(currentGroup, content));
+    }
+
+    return result;
+  }
+
+  /**
+   * Merge multiple nodes into one
+   */
+  private mergeNodes(nodes: ASTNode[], content: string): ASTNode {
+    if (nodes.length === 1) return nodes[0];
+
+    const first = nodes[0];
+    const last = nodes[nodes.length - 1];
+    const mergedContent = content.substring(first.startByte, last.endByte);
+
+    return {
+      type: 'block' as ASTNodeType,
+      name: nodes.map((n) => n.name).filter(Boolean).join('+') || undefined,
+      startByte: first.startByte,
+      endByte: last.endByte,
+      startLine: first.startLine,
+      endLine: last.endLine,
+      nonWhitespaceSize: this.countNonWhitespace(mergedContent),
+      children: nodes.flatMap((n) => n.children),
+      metadata: {
+        leadingComments: first.metadata.leadingComments,
+        parent: first.metadata.parent,
+        exported: nodes.some((n) => n.metadata.exported),
+      },
+    };
+  }
+
+  // ============================================================================
+  // cAST HELPER METHODS
+  // ============================================================================
+
+  /**
+   * Count non-whitespace characters in a string
+   */
+  private countNonWhitespace(text: string): number {
+    return text.replace(/\s/g, '').length;
+  }
+
+  /**
+   * Count newlines in a string
+   */
+  private countNewlines(text: string): number {
+    return (text.match(/\n/g) || []).length;
+  }
+
+  /**
+   * Convert line/column to byte offset
+   */
+  private lineColumnToByte(content: string, line: number, column: number): number {
+    const lines = content.split('\n');
+    let byte = 0;
+
+    for (let i = 0; i < line - 1 && i < lines.length; i++) {
+      byte += lines[i].length + 1; // +1 for newline
+    }
+
+    byte += Math.min(column, lines[line - 1]?.length || 0);
+    return byte;
+  }
+
+  /**
+   * Find leading comments for a symbol
+   */
+  private findLeadingComments(
+    _content: string,
+    lines: string[],
+    symbolLine: number,
+    symbolByte: number
+  ): { adjustedStart: number; leadingComments: string[] } {
+    const comments: string[] = [];
+    let adjustedLine = symbolLine - 1; // 0-indexed
+
+    // Look back for comments (up to 20 lines)
+    const lookBackLimit = Math.min(20, adjustedLine);
+    for (let i = adjustedLine - 1; i >= adjustedLine - lookBackLimit && i >= 0; i--) {
+      const line = lines[i]?.trim() || '';
+      if (
+        line.startsWith('//') ||
+        line.startsWith('/*') ||
+        line.startsWith('*') ||
+        line.startsWith('#') ||
+        line.startsWith('"""') ||
+        line.startsWith("'''") ||
+        line === ''
+      ) {
+        if (line !== '') {
+          comments.unshift(line);
+        }
+        adjustedLine = i;
+      } else {
+        break;
+      }
+    }
+
+    // Calculate adjusted byte position
+    let adjustedByte = symbolByte;
+    for (let i = symbolLine - 2; i >= adjustedLine; i--) {
+      adjustedByte -= (lines[i]?.length || 0) + 1;
+    }
+
+    return {
+      adjustedStart: Math.max(0, adjustedByte),
+      leadingComments: comments,
+    };
+  }
+
+  /**
+   * Convert symbol kind to AST node type
+   */
+  private symbolKindToNodeType(kind: Symbol['kind']): ASTNodeType {
+    const mapping: Record<Symbol['kind'], ASTNodeType> = {
+      function: 'function',
+      method: 'method',
+      class: 'class',
+      interface: 'interface',
+      type: 'type',
+      enum: 'enum',
+      constant: 'statement',
+      variable: 'statement',
+      property: 'statement',
+      module: 'module',
+      namespace: 'namespace',
+    };
+    return mapping[kind] || 'block';
+  }
+
+  /**
+   * Convert AST node type to chunk type
+   */
+  private nodeTypeToChunkType(type: ASTNodeType): SemanticChunk['type'] {
+    switch (type) {
+      case 'class':
+      case 'interface':
+        return 'class';
+      case 'function':
+      case 'method':
+        return 'function';
+      case 'module':
+      case 'namespace':
+        return 'module';
+      case 'comment_block':
+        return 'comment';
+      default:
+        return 'mixed';
+    }
+  }
+
+  /**
+   * Build parent-child hierarchy from flat node list
+   */
+  private buildHierarchy(nodes: ASTNode[]): ASTNode[] {
+    const topLevel: ASTNode[] = [];
+    const nodeMap = new Map<string, ASTNode>();
+
+    // First pass: map nodes by name
+    for (const node of nodes) {
+      if (node.name) {
+        nodeMap.set(node.name, node);
+      }
+    }
+
+    // Second pass: build hierarchy
+    for (const node of nodes) {
+      if (node.metadata.parent && nodeMap.has(node.metadata.parent)) {
+        const parent = nodeMap.get(node.metadata.parent)!;
+        parent.children.push(node);
+      } else {
+        topLevel.push(node);
+      }
+    }
+
+    return topLevel;
+  }
+
+  /**
+   * Find semantic boundaries in code content
+   */
+  private findSemanticBoundaries(content: string, _nodeType: ASTNodeType): number[] {
+    const boundaries: number[] = [];
+    const lines = content.split('\n');
+    let currentPos = 0;
+
+    // Look for method/function boundaries, blank lines between blocks, etc.
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const trimmed = line.trim();
+
+      // Method/function definitions
+      if (
+        /^(?:(?:public|private|protected|static|async)\s+)*(?:function|def|fn|func|method)\s/.test(trimmed) ||
+        /^(?:(?:public|private|protected|static|async)\s+)*\w+\s*\([^)]*\)\s*[:{]/.test(trimmed)
+      ) {
+        if (currentPos > 0) {
+          boundaries.push(currentPos);
+        }
+      }
+
+      // Blank lines followed by non-blank (potential block separator)
+      if (trimmed === '' && i > 0 && i < lines.length - 1) {
+        const prevLine = lines[i - 1]?.trim() || '';
+        const nextLine = lines[i + 1]?.trim() || '';
+        if (prevLine !== '' && nextLine !== '' && !nextLine.startsWith('//') && !nextLine.startsWith('#')) {
+          boundaries.push(currentPos + line.length + 1);
+        }
+      }
+
+      currentPos += line.length + 1; // +1 for newline
+    }
+
+    return [...new Set(boundaries)].sort((a, b) => a - b);
+  }
+
+  /**
+   * Check if two nodes are adjacent (no significant gap)
+   */
+  private areAdjacentNodes(a: ASTNode, b: ASTNode, content: string): boolean {
+    if (a.endLine + 2 >= b.startLine) return true;
+
+    // Check if gap is only whitespace/comments
+    const gap = content.substring(a.endByte, b.startByte);
+    const nonWS = this.countNonWhitespace(gap.replace(/\/\/.*|\/\*[\s\S]*?\*\/|#.*/g, ''));
+    return nonWS < 10;
+  }
+
+  /**
+   * Get symbols within a line range
+   */
+  private getSymbolsInRange(symbols: Symbol[], startLine: number, endLine: number): Symbol[] {
+    return symbols.filter((s) => s.line >= startLine && s.line <= endLine);
+  }
+
+  /**
+   * Get imports that are actually used in the content
+   */
+  private getContextualImports(imports: Import[], content: string): string[] {
+    return imports
+      .filter((imp) => {
+        // Check if any imported name is used in the content
+        return imp.names.some((n) => {
+          const name = n.alias || n.name;
+          return new RegExp(`\\b${name}\\b`).test(content);
+        });
+      })
+      .map((imp) => imp.source);
+  }
+
+  /**
+   * Detect logical block type from content
+   */
+  private detectLogicalBlockType(content: string): string | undefined {
+    const trimmed = content.trim();
+
+    if (/^(?:if|else\s+if)\s*\(/.test(trimmed)) return 'conditional';
+    if (/^(?:for|while|do)\s*[\(\{]/.test(trimmed)) return 'loop';
+    if (/^try\s*\{/.test(trimmed)) return 'try-catch';
+    if (/^switch\s*\(/.test(trimmed)) return 'switch';
+    if (/^(?:async\s+)?function/.test(trimmed)) return 'function';
+    if (/^class\s/.test(trimmed)) return 'class';
+
+    return undefined;
   }
 
   private createEmptyResult(filePath: string, language: string, startTime: number): ParseResult {

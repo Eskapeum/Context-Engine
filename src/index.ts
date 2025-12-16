@@ -1,5 +1,5 @@
 /**
- * Universal Context Engine (UCE) v2.3
+ * Universal Context Engine (UCE) v4.0
  *
  * The most intelligent context engine for AI coding assistants.
  *
@@ -7,9 +7,13 @@
  * - Tree-sitter AST parsing (20+ languages)
  * - Incremental indexing with dependency tracking
  * - Git branch-aware per-user indexing
- * - Semantic chunking for embeddings
+ * - cAST semantic chunking for optimal retrieval
  * - Hybrid retrieval (BM25 + dense vectors)
  * - MCP server for Claude Code integration
+ * - Library documentation (local-first with optional API)
+ * - Sequential thinking engine for complex reasoning
+ * - Persistent memory with Q&A history
+ * - Context sharing for team collaboration
  *
  * @packageDocumentation
  * @module universal-context-engine
@@ -165,6 +169,18 @@ export * from './qa/index.js';
 // Analytics module (v3.0+)
 export * from './analytics/index.js';
 
+// Library Documentation module (v4.0+)
+export * from './library-docs/index.js';
+
+// Sequential Thinking module (v4.0+)
+export * from './thinking/index.js';
+
+// Memory module (v4.0+)
+export * from './memory/index.js';
+
+// Sharing module (v4.0+)
+export * from './sharing/index.js';
+
 // Interactive CLI (v3.3+)
 export { InteractiveCLI, startInteractiveCLI } from './cli/interactive.js';
 export type { InteractiveCLIConfig } from './cli/interactive.js';
@@ -267,7 +283,7 @@ export async function startMCPServer(
 /**
  * Version of the UCE package.
  */
-export const VERSION = '3.5.0';
+export const VERSION = '4.0.0';
 
 // Default export for convenience
 export default {

@@ -190,6 +190,103 @@ export interface TypeReference {
 }
 
 // ============================================================================
+// cAST CHUNKING TYPES (v4.0+)
+// ============================================================================
+
+/**
+ * AST node type for cAST chunking algorithm
+ */
+export type ASTNodeType =
+  | 'class'
+  | 'function'
+  | 'method'
+  | 'interface'
+  | 'type'
+  | 'enum'
+  | 'block'
+  | 'statement'
+  | 'module'
+  | 'namespace'
+  | 'import_block'
+  | 'export_block'
+  | 'comment_block';
+
+/**
+ * AST node for hierarchical chunking
+ *
+ * Used by the cAST algorithm to build a size-aware AST hierarchy
+ * and recursively break/merge nodes for optimal chunking.
+ */
+export interface ASTNode {
+  /** Node type */
+  type: ASTNodeType;
+  /** Symbol name (if applicable) */
+  name?: string;
+  /** Start byte position in source */
+  startByte: number;
+  /** End byte position in source */
+  endByte: number;
+  /** Start line (1-indexed) */
+  startLine: number;
+  /** End line */
+  endLine: number;
+  /** Non-whitespace character count (primary size metric for cAST) */
+  nonWhitespaceSize: number;
+  /** Child nodes */
+  children: ASTNode[];
+  /** Node metadata */
+  metadata: ASTNodeMetadata;
+}
+
+/**
+ * AST node metadata for enhanced context
+ */
+export interface ASTNodeMetadata {
+  /** Leading comments/docstrings */
+  leadingComments?: string[];
+  /** Trailing comments */
+  trailingComments?: string[];
+  /** Parent symbol name */
+  parent?: string;
+  /** Whether exported */
+  exported?: boolean;
+  /** Visibility modifier */
+  visibility?: Visibility;
+  /** Decorators/attributes */
+  decorators?: string[];
+}
+
+/**
+ * Constraints for cAST chunking algorithm
+ *
+ * Uses non-whitespace character count instead of token count
+ * for more consistent sizing across languages.
+ */
+export interface ChunkConstraints {
+  /** Maximum non-whitespace characters per chunk (default: 1600) */
+  maxNonWhitespaceChars: number;
+  /** Minimum non-whitespace characters per chunk (default: 160) */
+  minNonWhitespaceChars: number;
+  /** Target size for optimal chunking (default: 1200) */
+  targetSize: number;
+  /** Whether to preserve semantic boundaries (default: true) */
+  preserveSemanticBoundaries: boolean;
+}
+
+/**
+ * Default cAST chunk constraints
+ *
+ * Based on research showing 1600 non-whitespace chars ≈ 500 tokens
+ * with optimal retrieval at ~1200 chars (sweet spot).
+ */
+export const DEFAULT_CHUNK_CONSTRAINTS: ChunkConstraints = {
+  maxNonWhitespaceChars: 1600,
+  minNonWhitespaceChars: 160,
+  targetSize: 1200,
+  preserveSemanticBoundaries: true,
+};
+
+// ============================================================================
 // CHUNK TYPES
 // ============================================================================
 
@@ -215,8 +312,10 @@ export interface SemanticChunk {
   symbols: string[];
   /** Imports relevant to chunk */
   imports: string[];
-  /** Token count estimate */
+  /** Token count estimate (legacy, kept for compatibility) */
   tokenCount: number;
+  /** Non-whitespace character count (cAST primary metric) */
+  nonWhitespaceSize?: number;
   /** Metadata for retrieval */
   metadata: ChunkMetadata;
 }
@@ -241,6 +340,12 @@ export interface ChunkMetadata {
   isPartial?: boolean;
   /** Part index when symbol is split into multiple chunks */
   partIndex?: number;
+  /** Full parent hierarchy (cAST) */
+  parentChain?: string[];
+  /** Imports used within this chunk (cAST) */
+  contextualImports?: string[];
+  /** Logical block type - if/loop/try-catch etc (cAST) */
+  logicalBlockType?: string;
 }
 
 // ============================================================================

@@ -1,0 +1,17 @@
+# Files to exclude from context indexing
+# (in addition to .gitignore)
+
+# Large generated files
+*.min.js
+*.bundle.js
+*.chunk.js
+
+# Test fixtures
+__fixtures__/
+__mocks__/
+
+# Documentation builds
+docs/build/
+site/
+
+# Add project-specific excludes below:
